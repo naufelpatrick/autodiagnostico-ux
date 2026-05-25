@@ -729,11 +729,11 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Como descreve sua abordagem ao criar e manter Design Systems?
+                     Qual é sua principal expectativa ao participar desse programa de mentoria?
                     </label>
                     <textarea
                       rows="3"
-                      placeholder="Descreva a arquitetura de tokens, componentes, documentação de padrões e colaboração de código..."
+                      placeholder="Expectativa mentoria"
                       value={discursive.systems}
                       onChange={(e) => handleDiscursiveChange('systems', e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -742,11 +742,11 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Qual foi seu maior desafio recente de UX e como você o resolveu?
+                      Quais habilidades ou competências específicas você gostaria de desenvolver ou aprimorar? Quais desafios você tem enfrentado atualmente em seus projetos de UX?
                     </label>
                     <textarea
                       rows="3"
-                      placeholder="Descreva o caso, dados envolvidos, hipóteses testadas e como contornou as fricções com stakeholders..."
+                      placeholder="Descreva os desafios de design que você tem enfrentado e as habilidades que deseja aprimorar..."
                       value={discursive.challenge}
                       onChange={(e) => handleDiscursiveChange('challenge', e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -755,11 +755,11 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Como você mede o sucesso de suas soluções de design?
+                      Com base em suas atividades recentes, identifique os principais gaps de conhecimento ou práticas que você percebe em seu trabalho de UX.
                     </label>
                     <textarea
                       rows="3"
-                      placeholder="Sinalize métricas (ex: taxa de conversão, redução de chamados de suporte, NPS, aprovação executiva)..."
+                      placeholder="Principais gaps de conhecimento ou práticas que você percebe em seu trabalho de UX..."
                       value={discursive.success}
                       onChange={(e) => handleDiscursiveChange('success', e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
