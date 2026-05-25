@@ -880,8 +880,114 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS:
               </div>
             </div>
 
-            {/* Renderização do Texto */}
-            <div className="prose prose-slate dark:prose-invert max-w-none">
+            {/* Radar dentro do relatório para PDF */}
+<div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 mb-8">
+
+  <div className="mb-5">
+    <h3 className="font-bold text-slate-900 dark:text-white text-lg">
+      Gráfico Radar de Competências
+    </h3>
+
+    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+      Visualização quantitativa das 10 competências avaliadas.
+    </p>
+  </div>
+
+  <div className="flex justify-center">
+    <svg width={420} height={420} className="overflow-visible">
+
+      {/* Grid */}
+      {levels.map((level) => {
+        const levelPoints = COMPETENCIES.map((_, idx) => {
+          const { x, y } = getCoordinates(idx, level);
+          return `${x},${y}`;
+        }).join(' ');
+
+        return (
+          <polygon
+            key={`report-level-${level}`}
+            points={levelPoints}
+            fill="none"
+            stroke="rgba(99, 102, 241, 0.15)"
+            strokeWidth="1"
+          />
+        );
+      })}
+
+      {/* Eixos */}
+      {COMPETENCIES.map((_, idx) => {
+        const maxCoord = getCoordinates(idx, 5);
+
+        return (
+          <line
+            key={`report-axis-${idx}`}
+            x1={center}
+            y1={center}
+            x2={maxCoord.x}
+            y2={maxCoord.y}
+            stroke="rgba(148, 163, 184, 0.25)"
+            strokeWidth="1.2"
+            strokeDasharray="2,2"
+          />
+        );
+      })}
+
+      {/* Polígono */}
+      <polygon
+        points={points}
+        fill="rgba(99, 102, 241, 0.2)"
+        stroke="rgba(99, 102, 241, 0.85)"
+        strokeWidth="2.5"
+      />
+
+      {/* Pontos */}
+      {COMPETENCIES.map((comp, idx) => {
+        const score = scores[comp.id] || 1;
+        const { x, y } = getCoordinates(idx, score);
+
+        return (
+          <circle
+            key={`report-dot-${idx}`}
+            cx={x}
+            cy={y}
+            r="5"
+            className="fill-indigo-600 dark:fill-indigo-400 stroke-white dark:stroke-slate-900"
+            strokeWidth="1.5"
+          />
+        );
+      })}
+
+      {/* Labels */}
+      {COMPETENCIES.map((comp, idx) => {
+        const labelPos = getCoordinates(idx, 5.6);
+
+        const isLeft = labelPos.x < center;
+        const isCenter = Math.abs(labelPos.x - center) < 10;
+
+        const textAnchor = isCenter
+          ? "middle"
+          : isLeft
+          ? "end"
+          : "start";
+
+        return (
+          <text
+            key={`report-label-${idx}`}
+            x={labelPos.x}
+            y={labelPos.y + 3}
+            className="text-[9px] font-bold fill-slate-700 dark:fill-slate-300"
+            textAnchor={textAnchor}
+          >
+            {comp.label} ({scores[comp.id]})
+          </text>
+        );
+      })}
+    </svg>
+  </div>
+</div>
+
+{/* Renderização do Texto */}
+<div className="prose prose-slate dark:prose-invert max-w-none">
               {report ? (
                 renderMarkdown(report)
               ) : (
