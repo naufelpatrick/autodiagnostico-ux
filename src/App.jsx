@@ -1,13 +1,9 @@
-console.log("API:", apiKey);
-console.log("MODEL:", modelName);
-console.log("PROMPT:", systemPrompt);
-
 import React, { useState, useEffect } from 'react';
 import { systemPrompt } from './config/prompts.jsx';
 
 // Chave da API (Preenchida pelo ambiente em execução)
 const apiKey = "AIzaSyCVO9n45sB0qrKNyNU0Bg4CJST6FPBDYcA";
-const modelName = "gemini-2.5-flash";
+const modelName = "gemini-1.5-flash";
 
 // Definição das 10 novas competências avaliadas
 const COMPETENCIES = [
@@ -125,46 +121,94 @@ export default function App() {
         }
 
         // Tentar mapear as colunas de forma inteligente buscando cabeçalhos comuns
-        const parsedList = rows.map((row) => {
-          const findKey = (candidates) => {
-            const keys = Object.keys(row);
-            const found = keys.find(k => {
-              const normalized = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-              return candidates.some(c => normalized.includes(c));
-            });
-            return found ? row[found] : "";
-          };
+const parsedList = rows.map((row) => {
+  const findKey = (candidates) => {
+    const keys = Object.keys(row);
+    const found = keys.find(k => {
+      const normalized = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return candidates.some(c => normalized.includes(c));
+    });
+    return found ? row[found] : "";
+  };
 
-          const name = findKey(["nome", "profissional", "participante", "user", "name"]) || "Profissional Sem Nome";
-          const role = findKey(["cargo", "funcao", "titulo", "role", "position"]) || "Designer de Produto";
-          const experience = findKey(["experiencia", "tempo", "anos", "senioridade"]) || "Experiência não informada";
-          
-          // Mapear as 10 notas de competências (padrão 3 se não localizado na planilha)
-          const research = Math.min(5, Math.max(1, parseInt(findKey(["pesquisa", "research", "discovery"])) || 3));
-          const ui = Math.min(5, Math.max(1, parseInt(findKey(["interface", "ui", "visual"])) || 3));
-          const architecture = Math.min(5, Math.max(1, parseInt(findKey(["arquitetura", "informacao", "architecture"])) || 3));
-          const documentation = Math.min(5, Math.max(1, parseInt(findKey(["documentacao", "entrega", "handoff", "documentation"])) || 3));
-          const feedback_iter = Math.min(5, Math.max(1, parseInt(findKey(["feedback", "iteracao", "melhoria"])) || 3));
-          const communication = Math.min(5, Math.max(1, parseInt(findKey(["comunicacao", "colaboracao", "communication"])) || 3));
-          const receive_feedback = Math.min(5, Math.max(1, parseInt(findKey(["receber feedback", "escuta", "critica"])) || 3));
-          const problem_solving = Math.min(5, Math.max(1, parseInt(findKey(["resolucao", "problema", "problem solving", "desafios"])) || 3));
-          const autonomy = Math.min(5, Math.max(1, parseInt(findKey(["autonomia", "automanagement", "independente"])) || 3));
-          const presentation = Math.min(5, Math.max(1, parseInt(findKey(["apresentar", "apresentacao", "defesa", "presentation"])) || 3));
+  const name = findKey(["nome", "profissional", "participante", "user", "name"]) || "Profissional Sem Nome";
+  const role = findKey(["cargo", "funcao", "titulo", "role", "position"]) || "Designer de Produto";
+  const experience = findKey(["experiencia", "tempo", "anos", "senioridade"]) || "Experiência não informada";
+  
+  const research = Math.min(5, Math.max(1, parseInt(findKey(["pesquisa", "research", "discovery"])) || 3));
+  const ui = Math.min(5, Math.max(1, parseInt(findKey(["interface", "ui", "visual"])) || 3));
+  const architecture = Math.min(5, Math.max(1, parseInt(findKey(["arquitetura", "informacao", "architecture"])) || 3));
+  const documentation = Math.min(5, Math.max(1, parseInt(findKey(["documentacao", "entrega", "handoff", "documentation"])) || 3));
+  const feedback_iter = Math.min(5, Math.max(1, parseInt(findKey(["feedback", "iteracao", "melhoria"])) || 3));
+  const communication = Math.min(5, Math.max(1, parseInt(findKey(["comunicacao", "colaboracao", "communication"])) || 3));
+  const receive_feedback = Math.min(5, Math.max(1, parseInt(findKey(["receber feedback", "escuta", "critica"])) || 3));
+  const problem_solving = Math.min(5, Math.max(1, parseInt(findKey(["resolucao", "problema", "problem solving", "desafios"])) || 3));
+  const autonomy = Math.min(5, Math.max(1, parseInt(findKey(["autonomia", "automanagement", "independente"])) || 3));
+  const presentation = Math.min(5, Math.max(1, parseInt(findKey(["apresentar", "apresentacao", "defesa", "presentation"])) || 3));
 
-          // Mapear respostas qualitativas
-          const dsText = findKey(["abordagem", "design system", "criar", "manter", "componentizar"]) || "Nenhuma resposta fornecida sobre sistemas de design.";
-          const challengeText = findKey(["desafio", "ux", "recente", "resolveu", "problema"]) || "Nenhum caso prático de desafio relatado.";
-          const successText = findKey(["sucesso", "medir", "mecanismo", "kpi", "metrica de design"]) || "Métrica de sucesso não detalhada.";
+  const expectationText =
+    findKey([
+      "qual e sua principal expectativa",
+      "qual é sua principal expectativa",
+      "principal expectativa",
+      "expectativa ao participar desse programa",
+      "programa de mentoria"
+    ]) || "Expectativa não informada.";
 
-          return {
-            name,
-            role,
-            experience,
-            date: new Date().toISOString().split('T')[0],
-            scores: { research, ui, architecture, documentation, feedback_iter, communication, receive_feedback, problem_solving, autonomy, presentation },
-            discursive: { systems: dsText, challenge: challengeText, success: successText }
-          };
-        });
+  const skillsText =
+    findKey([
+      "quais habilidades ou competencias especificas",
+      "quais habilidades ou competências específicas",
+      "gostaria de desenvolver",
+      "desenvolver ou aprimorar",
+      "competencias especificas",
+      "competências específicas"
+    ]) || "Habilidades a desenvolver não informadas.";
+
+  const challengesText =
+    findKey([
+      "quais desafios voce tem enfrentado atualmente",
+      "quais desafios você tem enfrentado atualmente",
+      "desafios em seus projetos de ux",
+      "projetos de ux",
+      "caso ja atue na area",
+      "caso já atue na área"
+    ]) || "Desafios atuais não informados.";
+
+  const gapsText =
+    findKey([
+      "com base em suas atividades recentes",
+      "principais gaps de conhecimento",
+      "gaps de conhecimento",
+      "praticas que voce percebe",
+      "práticas que você percebe",
+      "trabalho de ux"
+    ]) || "Gaps percebidos não informados.";
+
+  return {
+    name,
+    role,
+    experience,
+    date: new Date().toISOString().split('T')[0],
+    scores: {
+      research,
+      ui,
+      architecture,
+      documentation,
+      feedback_iter,
+      communication,
+      receive_feedback,
+      problem_solving,
+      autonomy,
+      presentation
+    },
+    discursive: {
+      systems: expectationText,
+      challenge: `${skillsText}\n\n${challengesText}`,
+      success: gapsText
+    }
+  };
+});
 
         setMultipleProfessionals(parsedList);
         setSelectedMappingIndex(0); // foca no primeiro por padrão
@@ -312,13 +356,13 @@ NOTAS AUTOAVALIADAS DE 1 A 5 (Mapeando o Radar de 10 Pontos):
 10. Apresentar: ${scores.presentation} / 5
 
 RESPOSTAS QUALITATIVAS DISCURSIVAS:
-1. Como descreve sua abordagem ao criar e manter Design Systems:
+1. Qual é sua principal expectativa ao participar desse programa de mentoria?
 "${discursive.systems || "Sem resposta preenchida."}"
 
-2. Qual foi o maior desafio recente de UX e como resolveu:
+2. Quais habilidades ou competências específicas você gostaria de desenvolver ou aprimorar? Quais desafios você tem enfrentado atualmente em seus projetos de UX?
 "${discursive.challenge || "Sem resposta preenchida."}"
 
-3. Como mede o sucesso de suas soluções de design:
+3. Com base em suas atividades recentes, identifique os principais gaps de conhecimento ou práticas que você percebe em seu trabalho de UX.
 "${discursive.success || "Sem resposta preenchida."}"`;
 
     const payload = {
@@ -327,19 +371,32 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS:
     };
 
     try {
-      const data = await fetchGeminiReport(payload);
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (generatedText) {
-        setReport(generatedText);
-      } else {
-        throw new Error("Resposta inválida recebida da inteligência artificial.");
-      }
-    } catch (err) {
-      setError(err.message || "Não foi possível gerar o diagnóstico neste momento. Verifique as configurações de rede ou tente novamente.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const data = await fetchGeminiReport(payload);
+
+  if (!data || !data.candidates) {
+    throw new Error(
+      data?.error?.message ||
+      "A API Gemini não retornou conteúdo. Aguarde alguns minutos e tente novamente."
+    );
+  }
+
+  const generatedText = data.candidates[0]?.content?.parts?.[0]?.text;
+
+  if (generatedText) {
+    setReport(generatedText);
+  } else {
+    throw new Error("Resposta inválida recebida da inteligência artificial.");
+  }
+
+} catch (err) {
+  setError(
+    err.message ||
+    "Não foi possível gerar o diagnóstico neste momento."
+  );
+} finally {
+  setLoading(false);
+}
+};
 
   // Auxiliar para copiar o relatório gerado
   const handleCopyToClipboard = () => {
@@ -1018,6 +1075,8 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS:
             </div>
           </div>
         )}
+
+        
 
         {/* Notificação de Erro */}
         {error && (
