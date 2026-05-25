@@ -3,7 +3,7 @@ import { systemPrompt } from './config/prompts.jsx';
 
 // Chave da API (Preenchida pelo ambiente em execução)
 const apiKey = "AIzaSyAuIOuxihVJpEddeptK8N7olbpOcYNWt08";
-const modelName = "gemini-2.5-flash";
+const modelName = "gemini-2.0-flash";
 
 // Definição das 10 novas competências avaliadas
 const COMPETENCIES = [
