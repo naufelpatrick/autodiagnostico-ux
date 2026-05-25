@@ -1,6 +1,9 @@
+console.log("API:", apiKey);
+console.log("MODEL:", modelName);
+console.log("PROMPT:", systemPrompt);
 
 import React, { useState, useEffect } from 'react';
-import { systemPrompt } from './config/prompts';
+import { systemPrompt } from './config/prompts.jsx';
 
 // Chave da API (Preenchida pelo ambiente em execução)
 const apiKey = "AIzaSyCVO9n45sB0qrKNyNU0Bg4CJST6FPBDYcA";
@@ -219,38 +222,64 @@ export default function App() {
     return `${x},${y}`;
   }).join(' ');
 
-  // Implementação de requisição com Backoff Exponencial para API Gemini
-  const fetchGeminiReport = async (payload) => {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-    let retries = 5;
-    let delay = 1000;
+ // Implementação de requisição com Backoff Exponencial para API Gemini
+const fetchGeminiReport = async (payload) => {
 
-    for (let i = 0; i < retries; i++) {
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+  console.log("API KEY:", apiKey);
+  console.log("MODEL:", modelName);
+  console.log("SYSTEM PROMPT:", systemPrompt);
 
-        if (response.ok) {
-          return await response.json();
-        }
-        
-        if (response.status === 429 || response.status >= 500) {
-          await new Promise(res => setTimeout(res, delay));
-          delay *= 2; 
-          continue;
-        }
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-        throw new Error(`Erro na API Gemini (Código: ${response.status})`);
-      } catch (err) {
-        if (i === retries - 1) throw err;
+  console.log("URL FINAL:", url);
+  console.log("PAYLOAD:", payload);
+
+  let retries = 5;
+  let delay = 1000;
+
+  for (let i = 0; i < retries; i++) {
+    try {
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      console.log("STATUS:", response.status);
+
+      const responseData = await response.json();
+
+      console.log("RESPOSTA GEMINI:", responseData);
+
+      if (response.ok) {
+        return responseData;
+      }
+
+      if (response.status === 429 || response.status >= 500) {
         await new Promise(res => setTimeout(res, delay));
         delay *= 2;
+        continue;
       }
+
+      throw new Error(
+        responseData?.error?.message ||
+        `Erro na API Gemini (Código: ${response.status})`
+      );
+
+    } catch (err) {
+
+      console.error("ERRO GEMINI:", err);
+
+      if (i === retries - 1) throw err;
+
+      await new Promise(res => setTimeout(res, delay));
+      delay *= 2;
     }
-  };
+  }
+};
 
   // Disparar geração do relatório executivo
   const generateReport = async () => {
