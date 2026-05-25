@@ -325,19 +325,91 @@ const fetchGeminiReport = async (payload) => {
   }
 };
 
-  // Disparar geração do relatório executivo
-  const generateReport = async () => {
-    if (!profile.name || !profile.role) {
-      setError("Por favor, preencha o Nome e o Cargo do avaliado antes de gerar o relatório executivo.");
-      return;
-    }
+// Disparar geração do relatório executivo
+const generateReport = async () => {
+  if (!profile.name || !profile.role) {
+    setError("Por favor, preencha o Nome e o Cargo do avaliado antes de gerar o relatório executivo.");
+    return;
+  }
 
-    setLoading(true);
-    setError(null);
-    setReport("");
-    setActiveTab('report');
+  setLoading(true);
+  setError(null);
+  setReport("");
+  setActiveTab('report');
 
-        const userPrompt = `DADOS DO PROFISSIONAL AVALIADO:
+  // PASSO 1 — Competências mais fortes e mais fracas
+  const highestCompetencies = Object.entries(scores)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+
+  const lowestCompetencies = Object.entries(scores)
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, 3);
+
+  // PASSO 2 — Inferência de arquétipo profissional
+  let archetype = "Generalista em Desenvolvimento";
+
+  if (scores.ui >= 4 && scores.research <= 2) {
+    archetype = "Designer Visual Executor";
+  }
+
+  if (scores.research >= 4 && scores.communication <= 2) {
+    archetype = "Pesquisador Analítico Introvertido";
+  }
+
+  if (
+    scores.communication >= 4 &&
+    scores.presentation >= 4 &&
+    scores.problem_solving >= 4
+  ) {
+    archetype = "Facilitador Estratégico";
+  }
+
+  if (
+    scores.autonomy >= 4 &&
+    scores.problem_solving >= 4 &&
+    scores.presentation <= 2
+  ) {
+    archetype = "Especialista Técnico de Bastidor";
+  }
+
+  // PASSO 3 — Prontidão para liderança
+  let leadershipReadiness = "Baixa";
+
+  const leadershipScore =
+    scores.communication +
+    scores.presentation +
+    scores.problem_solving +
+    scores.autonomy;
+
+  if (leadershipScore >= 16) {
+    leadershipReadiness = "Alta";
+  } else if (leadershipScore >= 12) {
+    leadershipReadiness = "Moderada";
+  }
+
+  // PASSO 4 — Inconsistências detectadas
+  const inconsistencies = [];
+
+  if (
+    discursive.challenge.length > 300 &&
+    scores.communication <= 2
+  ) {
+    inconsistencies.push(
+      "Discurso sofisticado com possível dificuldade prática de articulação organizacional."
+    );
+  }
+
+  if (
+    scores.autonomy >= 4 &&
+    scores.documentation <= 2
+  ) {
+    inconsistencies.push(
+      "Alta percepção de autonomia com baixa maturidade de documentação."
+    );
+  }
+
+  const userPrompt = `DADOS DO PROFISSIONAL AVALIADO:
 - Nome: ${profile.name}
 - Cargo Atual: ${profile.role}
 - Experiência: ${profile.experience || "Não informada"}
@@ -354,6 +426,24 @@ NOTAS AUTOAVALIADAS DE 1 A 5 (Mapeando o Radar de 10 Pontos):
 8. Resolução de Problemas: ${scores.problem_solving} / 5
 9. Autonomia: ${scores.autonomy} / 5
 10. Apresentar: ${scores.presentation} / 5
+
+CAMADA DE INTELIGÊNCIA:
+
+Arquétipo Inferido:
+${archetype}
+
+Prontidão para Liderança:
+${leadershipReadiness}
+
+Competências Mais Fortes:
+${highestCompetencies.map(([k, v]) => `${k}: ${v}`).join(', ')}
+
+Competências Mais Fracas:
+${lowestCompetencies.map(([k, v]) => `${k}: ${v}`).join(', ')}
+
+Inconsistências Detectadas:
+${inconsistencies.join(' | ') || "Nenhuma inconsistência relevante detectada."}
+
 
 RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
 1. Qual é sua principal expectativa ao participar desse programa de mentoria?
