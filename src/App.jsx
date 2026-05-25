@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { systemPrompt } from './config/prompts.jsx';
 
 // Chave da API (Preenchida pelo ambiente em execução)
-const apiKey = "AIzaSyCVO9n45sB0qrKNyNU0Bg4CJST6FPBDYcA";
-const modelName = "gemini-1.5-flash";
+const apiKey = "AIzaSyAuIOuxihVJpEddeptK8N7olbpOcYNWt08";
+const modelName = "gemini-2.5-flash";
 
 // Definição das 10 novas competências avaliadas
 const COMPETENCIES = [
