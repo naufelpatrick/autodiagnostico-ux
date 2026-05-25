@@ -1,4 +1,4 @@
-import { systemPrompt } from './config/prompts';
+
 import React, { useState, useEffect } from 'react';
 
 // Chave da API (Preenchida pelo ambiente em execução)
