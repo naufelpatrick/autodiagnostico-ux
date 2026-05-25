@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // Chave da API (Preenchida pelo ambiente em execução)
-const apiKey = "";
+const apiKey = "SUA_CHAVE_DO_GEMINI_AQUI";
 const modelName = "gemini-2.5-flash-preview-09-2025";
 
 // Definição das 10 novas competências avaliadas
