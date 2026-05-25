@@ -355,7 +355,7 @@ NOTAS AUTOAVALIADAS DE 1 A 5 (Mapeando o Radar de 10 Pontos):
 9. Autonomia: ${scores.autonomy} / 5
 10. Apresentar: ${scores.presentation} / 5
 
-RESPOSTAS QUALITATIVAS DISCURSIVAS:
+RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
 1. Qual é sua principal expectativa ao participar desse programa de mentoria?
 "${discursive.systems || "Sem resposta preenchida."}"
 
