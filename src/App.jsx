@@ -617,49 +617,48 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
       )}
 
       {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-4 px-6 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="font-bold text-lg text-slate-900 dark:text-white leading-tight">Autodiagnóstico UX/UI</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Plataforma Avançada de Mapeamento Técnico & Comportamental</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('input')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                activeTab === 'input' 
-                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50' 
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              Mapeamento de Dados
-            </button>
-            <button
-              onClick={() => { if (report) setActiveTab('report'); }}
-              disabled={!report}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 ${
-                !report ? 'opacity-50 cursor-not-allowed text-slate-400' :
-                activeTab === 'report' 
-                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50' 
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-              </svg>
-              Ver Relatório Gerado
-            </button>
-          </div>
-        </div>
-      </header>
+     <header className="border-b border-white/10 bg-[#071226]">
+  <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+
+    {/* ESQUERDA */}
+    <div className="flex items-center gap-4">
+      <img
+  src={`${import.meta.env.BASE_URL}foton.png`}
+  alt="Fóton"
+  className="h-10 object-contain"
+/>
+
+
+      <div className="w-px h-10 bg-white/10" />
+
+      <div>
+        <h1 className="text-2xl font-bold text-white">
+          Assessment Executivo UX/UI
+        </h1>
+
+        <p className="text-sm text-white/60">
+          Programa Experimental de Desenvolvimento Profissional
+        </p>
+      </div>
+    </div>
+
+    {/* DIREITA */}
+    <div className="flex items-center gap-4">
+
+      <div className="hidden md:flex items-center px-3 py-1 rounded-full border border-yellow-400/30 bg-yellow-400/10 text-[##f6812b] text-xs font-medium">
+        Uso Interno Experimental
+      </div>
+
+      <img
+  src={`${import.meta.env.BASE_URL}caixa.png`}
+  alt="Caixa"
+  className="h-12 object-contain"
+/>
+
+    </div>
+
+  </div>
+</header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {activeTab === 'input' ? (
@@ -669,11 +668,11 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
             <div className="lg:col-span-7 space-y-8">
               
               {/* ÁREA DE UPLOAD REAL DE PLANILHA (XLSX / CSV) */}
-              <div className="bg-gradient-to-br from-indigo-950 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 rounded-full blur-2xl"></div>
+              <div className="bg-gradient-to-br from-[#071226] via-[#0B1730] to-[#09254A] border border-[#005CA9]/30 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#005CA9] rounded-full blur-2xl"></div>
                 
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 bg-indigo-800/40 px-2.5 py-1 rounded-md">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#050816] bg-[#F6812B] px-2.5 py-1 rounded-md">
                     Processamento Inteligente XLS/CSV
                   </span>
                 </div>
@@ -690,7 +689,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                     onChange={handleFileChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 mx-auto text-indigo-300 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 mx-auto text-[#F9B000] mb-2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
                   </svg>
                   <p className="text-xs font-semibold">Arraste a planilha aqui ou clique para selecionar</p>
@@ -700,7 +699,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                 {/* Seletor quando múltiplos profissionais forem encontrados na Planilha */}
                 {multipleProfessionals.length > 0 && (
                   <div className="mt-5 pt-4 border-t border-indigo-500/20">
-                    <p className="text-xs font-bold text-indigo-300 mb-2.5 flex items-center gap-1.5">
+                    <p className="text-xs font-bold text-[#F9B000] mb-2.5 flex items-center gap-1.5">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.081 12H15m-1.5-1.5H1.5A1.5 1.5 0 000 12v3c0 .828.672 1.5 1.5 1.5h1.318a4.502 4.502 0 0010.364 0H15" />
                       </svg>
@@ -770,7 +769,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                       type="date"
                       value={profile.date}
                       onChange={(e) => setProfile(prev => ({ ...prev, date: e.target.value }))}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-indigo-200 dark:border-indigo-900 focus:border-indigo-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-indigo-600 dark:text-indigo-400"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-indigo-200 dark:border-[#005ca9] focus:border-indigo-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-indigo-600 dark:text-[#ffffff]"
                     />
                   </div>
                 </div>
@@ -791,7 +790,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                           <span className="font-semibold text-xs text-slate-800 dark:text-slate-200">{comp.label}</span>
                           <p className="text-[10px] text-slate-400 dark:text-slate-500 line-clamp-1">{comp.desc}</p>
                         </div>
-                        <span className="bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-bold px-2 py-0.5 rounded text-xs ml-2">
+                        <span className="bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-[#f6812b] font-bold px-2 py-0.5 rounded text-xs ml-2">
                           {scores[comp.id] || 1}
                         </span>
                       </div>
@@ -802,8 +801,9 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                         step="1"
                         value={scores[comp.id] || 1}
                         onChange={(e) => handleScoreChange(comp.id, e.target.value)}
-                        className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg"
+                        className="w-full accent-[#f6812b] cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg"
                       />
+
                     </div>
                   ))}
                 </div>
@@ -862,7 +862,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
               <button
                 onClick={generateReport}
                 disabled={loading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition flex items-center justify-center gap-3 text-base"
+                className="w-full bg-[#005CA9] hover:bg-[#0B63CE] disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition flex items-center justify-center gap-3 text-base"
               >
                 {loading ? (
                   <>
@@ -905,7 +905,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                           key={`level-${level}`}
                           points={levelPoints}
                           fill="none"
-                          stroke="rgba(99, 102, 241, 0.15)"
+                          stroke="rgba(0, 92, 169, 0.15)"
                           strokeWidth="1"
                         />
                       );
@@ -931,8 +931,8 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                     {/* Área do Polígono das Notas do Candidato */}
                     <polygon
                       points={points}
-                      fill="rgba(99, 102, 241, 0.2)"
-                      stroke="rgba(99, 102, 241, 0.85)"
+                      fill="rgba(0, 92, 169, 0.2)"
+                      stroke="rgba(0, 92, 169, 0.85)"
                       strokeWidth="2.5"
                     />
 
@@ -946,7 +946,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                           cx={x}
                           cy={y}
                           r="5"
-                          className="fill-indigo-600 dark:fill-indigo-400 stroke-white dark:stroke-slate-900"
+                          className="fill-indigo-600 dark:fill-[#f6812b] stroke-white dark:stroke-slate-900"
                           strokeWidth="1.5"
                         />
                       );
@@ -975,13 +975,13 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                 </div>
 
                 <div className="mt-6 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl p-4 border border-indigo-100/50 dark:border-indigo-950">
-                  <h4 className="font-semibold text-xs text-indigo-900 dark:text-indigo-400 mb-1.5 flex items-center gap-1.5">
+                  <h4 className="font-semibold text-xs text-[#005CA9] dark:text-[#ffffff] mb-1.5 flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.063 1.062L10.83 13.84a.75.75 0 01-1.06 0l-2.06-2.06a.75.75 0 011.06-1.06l1.53 1.53 2.45-2.45z" />
                     </svg>
                     Diagnóstico Decagonal Ativo
                   </h4>
-                  <p className="text-[11px] text-indigo-950 dark:text-indigo-300 leading-relaxed">
+                  <p className="text-[11px]  dark:text-[#FFFFFF] leading-relaxed">
                     Com dez competências estruturadas, você obtém uma teia muito mais precisa e fidedigna. O mentor cruzará esses dados para indicar a prontidão de transição em Y (Especialista vs. Gestão).
                   </p>
                 </div>
@@ -1012,7 +1012,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-sm"
+                  className="flex-1 sm:flex-initial bg-[#005CA9] hover:bg-[#0B63CE] text-white px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-sm"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12-1.227H7.231c-.615 0-1.11-.474-1.12-1.09L6.34 18m11.318-6.318A12.048 12.048 0 0015 7.5a12.048 12.048 0 00-2.682 4.182m0 0a12.05 12.05 0 01-4.636 0M12 7.5V3m0 0L8.25 6M12 3l3.75 3" />
@@ -1050,7 +1050,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
             key={`report-level-${level}`}
             points={levelPoints}
             fill="none"
-            stroke="rgba(99, 102, 241, 0.15)"
+            stroke="rgba(0, 92, 169, 0.15)"
             strokeWidth="1"
           />
         );
@@ -1077,7 +1077,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
       {/* Polígono */}
       <polygon
         points={points}
-        fill="rgba(99, 102, 241, 0.2)"
+        fill="rgba(0, 92, 169, 0.2)"
         stroke="rgba(99, 102, 241, 0.85)"
         strokeWidth="2.5"
       />
@@ -1093,7 +1093,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
             cx={x}
             cy={y}
             r="5"
-            className="fill-indigo-600 dark:fill-indigo-400 stroke-white dark:stroke-slate-900"
+            className="fill-indigo-600 dark:fill-[#f6812b] stroke-white dark:stroke-[#1e293b]"
             strokeWidth="1.5"
           />
         );
@@ -1188,6 +1188,10 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
             </div>
           </div>
         )}
+
+        <footer className="mt-12 border-t border-white/10 py-6 text-center text-sm text-white/40">
+  Powered by Fóton + Inteligência Artificial Generativa • Caixa Econômica Federal • Uso interno experimental
+</footer>
 
       </main>
 
