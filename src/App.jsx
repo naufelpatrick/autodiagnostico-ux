@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { systemPrompt } from './config/prompts.jsx';
 
-// Chave da API (Preenchida pelo ambiente em execução)
-const apiKey = "AIzaSyAuIOuxihVJpEddeptK8N7olbpOcYNWt08";
-const modelName = "gemini-2.5-flash";
-
 // Definição das 10 novas competências avaliadas
 const COMPETENCIES = [
   { id: 'research', label: 'Pesquisa com Usuário', desc: 'Condução de pesquisas, entrevistas, testes de usabilidade e síntese de dados.' },
@@ -266,40 +262,25 @@ const parsedList = rows.map((row) => {
     return `${x},${y}`;
   }).join(' ');
 
- // Implementação de requisição com Backoff Exponencial para API Gemini
+// Requisição para a API interna da Vercel
 const fetchGeminiReport = async (payload) => {
-
-  console.log("API KEY:", apiKey);
-  console.log("MODEL:", modelName);
-  console.log("SYSTEM PROMPT:", systemPrompt);
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-
-  console.log("URL FINAL:", url);
-  console.log("PAYLOAD:", payload);
-
-  let retries = 5;
+  let retries = 3;
   let delay = 1000;
 
   for (let i = 0; i < retries; i++) {
     try {
-
-      const response = await fetch(url, {
+      const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ payload })
       });
 
-      console.log("STATUS:", response.status);
-
-      const responseData = await response.json();
-
-      console.log("RESPOSTA GEMINI:", responseData);
+      const data = await response.json();
 
       if (response.ok) {
-        return responseData;
+        return data;
       }
 
       if (response.status === 429 || response.status >= 500) {
@@ -309,14 +290,11 @@ const fetchGeminiReport = async (payload) => {
       }
 
       throw new Error(
-        responseData?.error?.message ||
-        `Erro na API Gemini (Código: ${response.status})`
+        data?.error?.message ||
+        `Erro na API interna (Código: ${response.status})`
       );
 
     } catch (err) {
-
-      console.error("ERRO GEMINI:", err);
-
       if (i === retries - 1) throw err;
 
       await new Promise(res => setTimeout(res, delay));
