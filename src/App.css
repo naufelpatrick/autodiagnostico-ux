@@ -184,10 +184,11 @@
 }
 
 html {
-  background: #020817;
+  background: #020817 !important;
+  color-scheme: dark !important;
 }
 
 body {
-  background: #020817;
-  color: white;
+  background: #020817 !important;
+  color: white !important;
 }
