@@ -182,3 +182,12 @@
     border-right-color: var(--border);
   }
 }
+
+html {
+  background: #020817;
+}
+
+body {
+  background: #020817;
+  color: white;
+}
