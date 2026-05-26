@@ -11,7 +11,6 @@ export default async function handler(req, res) {
     const { payload } = req.body;
 
     const apiKey = "AIzaSyDD0SWg78e7wqsM_60faCVBgfadjAK22MY"
-
     const modelName = "gemini-2.5-flash";
 
     const response = await fetch(
