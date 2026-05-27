@@ -5,6 +5,8 @@ import { systemPrompt } from './config/prompts.jsx';
 const COMPETENCIES = [
   { id: 'research', label: 'Pesquisa com Usuário', desc: 'Condução de pesquisas, entrevistas, testes de usabilidade e síntese de dados.' },
   { id: 'ui', label: 'Design de Interfaces', desc: 'Domínio visual, tipografia, cores, grids e consistência estética.' },
+  { id: 'tools', label: 'Ferramentas de Design', desc: 'Domínio de softwares como Figma, Sketch, Adobe XD e prototipação.' },
+  { id: 'metrics', label: 'Análise, Métricas e Dados de UX', desc: 'Capacidade de coletar, analisar e interpretar dados quantitativos e qualitativos para decisões de design.' },
   { id: 'architecture', label: 'Arquitetura de Informação', desc: 'Mapeamento de fluxos de usuário, sitemaps, taxonomia e navegação.' },
   { id: 'documentation', label: 'Documentação & Entregas', desc: 'Especificação técnica, organização de handoff para desenvolvimento e UI kits.' },
   { id: 'feedback_iter', label: 'Feedback & Iteração', desc: 'Coleta de métricas e melhoria contínua a partir de dados reais do usuário.' },
@@ -28,6 +30,8 @@ export default function App() {
   const [scores, setScores] = useState({
     research: 3,
     ui: 3,
+    tools: 3,
+    metrics: 3,
     architecture: 3,
     documentation: 3,
     feedback_iter: 3,
@@ -108,103 +112,155 @@ export default function App() {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Converter em matriz de dados JSON (linhas)
-        const rows = window.XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-        
-        if (rows.length === 0) {
+        // Converter em matriz de dados por posição de coluna.
+        // Importante: as competências quantitativas usam colunas fixas da planilha
+        // para evitar erro de leitura por cabeçalhos parecidos.
+        const rowsArray = window.XLSX.utils.sheet_to_json(worksheet, {
+          header: 1,
+          defval: ""
+        });
+
+        if (rowsArray.length <= 1) {
           setError("A planilha importada parece estar vazia.");
           return;
         }
 
-        // Tentar mapear as colunas de forma inteligente buscando cabeçalhos comuns
-const parsedList = rows.map((row) => {
-  const findKey = (candidates) => {
-    const keys = Object.keys(row);
-    const found = keys.find(k => {
-      const normalized = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      return candidates.some(c => normalized.includes(c));
-    });
-    return found ? row[found] : "";
-  };
+        const headers = rowsArray[0];
+        const dataRows = rowsArray.slice(1).filter((rowArray) =>
+          rowArray.some((cell) => String(cell).trim() !== "")
+        );
 
-  const name = findKey(["nome", "profissional", "participante", "user", "name"]) || "Profissional Sem Nome";
-  const role = findKey(["cargo", "funcao", "titulo", "role", "position"]) || "Designer de Produto";
-  const experience = findKey(["experiencia", "tempo", "anos", "senioridade"]) || "Experiência não informada";
-  
-  const research = Math.min(5, Math.max(1, parseInt(findKey(["pesquisa", "research", "discovery"])) || 3));
-  const ui = Math.min(5, Math.max(1, parseInt(findKey(["interface", "ui", "visual"])) || 3));
-  const architecture = Math.min(5, Math.max(1, parseInt(findKey(["arquitetura", "informacao", "architecture"])) || 3));
-  const documentation = Math.min(5, Math.max(1, parseInt(findKey(["documentacao", "entrega", "handoff", "documentation"])) || 3));
-  const feedback_iter = Math.min(5, Math.max(1, parseInt(findKey(["feedback", "iteracao", "melhoria"])) || 3));
-  const communication = Math.min(5, Math.max(1, parseInt(findKey(["comunicacao", "colaboracao", "communication"])) || 3));
-  const receive_feedback = Math.min(5, Math.max(1, parseInt(findKey(["receber feedback", "escuta", "critica"])) || 3));
-  const problem_solving = Math.min(5, Math.max(1, parseInt(findKey(["resolucao", "problema", "problem solving", "desafios"])) || 3));
-  const autonomy = Math.min(5, Math.max(1, parseInt(findKey(["autonomia", "automanagement", "independente"])) || 3));
-  const presentation = Math.min(5, Math.max(1, parseInt(findKey(["apresentar", "apresentacao", "defesa", "presentation"])) || 3));
+        if (dataRows.length === 0) {
+          setError("A planilha importada não possui respostas preenchidas.");
+          return;
+        }
 
-  const expectationText =
-    findKey([
-      "qual e sua principal expectativa",
-      "qual é sua principal expectativa",
-      "principal expectativa",
-      "expectativa ao participar desse programa",
-      "programa de mentoria"
-    ]) || "Expectativa não informada.";
+        const columnToIndex = (col) => {
+          let index = 0;
+          const normalizedCol = col.toUpperCase().trim();
 
-  const skillsText =
-    findKey([
-      "quais habilidades ou competencias especificas",
-      "quais habilidades ou competências específicas",
-      "gostaria de desenvolver",
-      "desenvolver ou aprimorar",
-      "competencias especificas",
-      "competências específicas"
-    ]) || "Habilidades a desenvolver não informadas.";
+          for (let i = 0; i < normalizedCol.length; i++) {
+            index = index * 26 + normalizedCol.charCodeAt(i) - 64;
+          }
 
-  const challengesText =
-    findKey([
-      "quais desafios voce tem enfrentado atualmente",
-      "quais desafios você tem enfrentado atualmente",
-      "desafios em seus projetos de ux",
-      "projetos de ux",
-      "caso ja atue na area",
-      "caso já atue na área"
-    ]) || "Desafios atuais não informados.";
+          return index - 1;
+        };
 
-  const gapsText =
-    findKey([
-      "com base em suas atividades recentes",
-      "principais gaps de conhecimento",
-      "gaps de conhecimento",
-      "praticas que voce percebe",
-      "práticas que você percebe",
-      "trabalho de ux"
-    ]) || "Gaps percebidos não informados.";
+        const getCellByColumn = (rowArray, col) => {
+          return rowArray[columnToIndex(col)];
+        };
 
-  return {
-    name,
-    role,
-    experience,
-    date: new Date().toISOString().split('T')[0],
-    scores: {
-      research,
-      ui,
-      architecture,
-      documentation,
-      feedback_iter,
-      communication,
-      receive_feedback,
-      problem_solving,
-      autonomy,
-      presentation
-    },
-    discursive: {
-      systems: expectationText,
-      challenge: `${skillsText}\n\n${challengesText}`,
-      success: gapsText
-    }
-  };
-});
+        const toScore = (value) => {
+          const parsed = parseInt(value, 10);
+          return Math.min(5, Math.max(1, Number.isNaN(parsed) ? 3 : parsed));
+        };
+
+        const normalizeText = (text) =>
+          String(text || "")
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim();
+
+        const parsedList = dataRows.map((rowArray) => {
+          const findByHeader = (candidates) => {
+            const foundIndex = headers.findIndex((header) => {
+              const normalizedHeader = normalizeText(header);
+              return candidates.some((candidate) => normalizedHeader.includes(normalizeText(candidate)));
+            });
+
+            return foundIndex >= 0 ? rowArray[foundIndex] : "";
+          };
+
+          const name =
+            findByHeader(["nome", "profissional", "participante", "user", "name"]) ||
+            "Profissional Sem Nome";
+
+          const role =
+            findByHeader(["cargo", "funcao", "função", "titulo", "título", "role", "position"]) ||
+            "Designer de Produto";
+
+          const experience =
+            findByHeader(["experiencia", "experiência", "tempo", "anos", "senioridade"]) ||
+            "Experiência não informada";
+
+          // Mapeamento oficial por coluna da planilha:
+          // L  = Pesquisa com Usuários
+          // N  = Design de Interfaces
+          // P  = Arquitetura de Informação
+          // R  = Ferramentas de Design
+          // T  = Análise, Métricas e Dados de UX
+          // V  = Documentação, Comunicação e Entregas de UX
+          // X  = Feedback e Iteração nas Entregas
+          // AB = Comunicação e Colaboração em Equipe
+          // AD = Habilidade de Receber e Dar Feedbacks
+          // AF = Adaptabilidade e Resolução de Problemas
+          // AH = Autonomia no Desenvolvimento de Projetos
+          // AJ = Apresentação para stakeholders
+          const research = toScore(getCellByColumn(rowArray, "L"));
+          const ui = toScore(getCellByColumn(rowArray, "N"));
+          const architecture = toScore(getCellByColumn(rowArray, "P"));
+          const tools = toScore(getCellByColumn(rowArray, "R"));
+          const metrics = toScore(getCellByColumn(rowArray, "T"));
+          const documentation = toScore(getCellByColumn(rowArray, "V"));
+          const feedback_iter = toScore(getCellByColumn(rowArray, "X"));
+          const communication = toScore(getCellByColumn(rowArray, "AB"));
+          const receive_feedback = toScore(getCellByColumn(rowArray, "AD"));
+          const problem_solving = toScore(getCellByColumn(rowArray, "AF"));
+          const autonomy = toScore(getCellByColumn(rowArray, "AH"));
+          const presentation = toScore(getCellByColumn(rowArray, "AJ"));
+
+          // Respostas discursivas por coluna fixa:
+          // AL = Expectativa
+          // AM = Habilidades a desenvolver
+          // AN = Desafios atuais
+          // AO = Gaps percebidos
+          const expectationText =
+            getCellByColumn(rowArray, "AL") ||
+            findByHeader(["principal expectativa", "expectativa ao participar", "programa de mentoria"]) ||
+            "Expectativa não informada.";
+
+          const skillsText =
+            getCellByColumn(rowArray, "AM") ||
+            findByHeader(["habilidades", "competencias especificas", "competências específicas", "desenvolver ou aprimorar"]) ||
+            "Habilidades a desenvolver não informadas.";
+
+          const challengesText =
+            getCellByColumn(rowArray, "AN") ||
+            findByHeader(["desafios", "projetos de ux", "caso ja atue", "caso já atue"]) ||
+            "Desafios atuais não informados.";
+
+          const gapsText =
+            getCellByColumn(rowArray, "AO") ||
+            findByHeader(["gaps", "conhecimento", "praticas", "práticas", "trabalho de ux"]) ||
+            "Gaps percebidos não informados.";
+
+          return {
+            name,
+            role,
+            experience,
+            date: new Date().toISOString().split('T')[0],
+            scores: {
+              research,
+              ui,
+              architecture,
+              tools,
+              metrics,
+              documentation,
+              feedback_iter,
+              communication,
+              receive_feedback,
+              problem_solving,
+              autonomy,
+              presentation
+            },
+            discursive: {
+              systems: expectationText,
+              challenge: `${skillsText}\n\n${challengesText}`,
+              success: gapsText
+            }
+          };
+        });
 
         setMultipleProfessionals(parsedList);
         setSelectedMappingIndex(0); // foca no primeiro por padrão
@@ -262,7 +318,7 @@ const parsedList = rows.map((row) => {
     return `${x},${y}`;
   }).join(' ');
 
-// Requisição para a API interna da Vercel
+ // Requisição para a API interna da Vercel
 const fetchGeminiReport = async (payload) => {
   let retries = 3;
   let delay = 1000;
@@ -303,127 +359,39 @@ const fetchGeminiReport = async (payload) => {
   }
 };
 
-// Disparar geração do relatório executivo
-const generateReport = async () => {
-  if (!profile.name || !profile.role) {
-    setError("Por favor, preencha o Nome e o Cargo do avaliado antes de gerar o relatório executivo.");
-    return;
-  }
+  // Disparar geração do relatório executivo
+  const generateReport = async () => {
+    if (!profile.name || !profile.role) {
+      setError("Por favor, preencha o Nome e o Cargo do avaliado antes de gerar o relatório executivo.");
+      return;
+    }
 
-  setLoading(true);
-  setError(null);
-  setReport("");
-  setActiveTab('report');
+    setLoading(true);
+    setError(null);
+    setReport("");
+    setActiveTab('report');
 
-  // PASSO 1 — Competências mais fortes e mais fracas
-  const highestCompetencies = Object.entries(scores)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3);
-
-  const lowestCompetencies = Object.entries(scores)
-    .sort((a, b) => a[1] - b[1])
-    .slice(0, 3);
-
-  // PASSO 2 — Inferência de arquétipo profissional
-  let archetype = "Generalista em Desenvolvimento";
-
-  if (scores.ui >= 4 && scores.research <= 2) {
-    archetype = "Designer Visual Executor";
-  }
-
-  if (scores.research >= 4 && scores.communication <= 2) {
-    archetype = "Pesquisador Analítico Introvertido";
-  }
-
-  if (
-    scores.communication >= 4 &&
-    scores.presentation >= 4 &&
-    scores.problem_solving >= 4
-  ) {
-    archetype = "Facilitador Estratégico";
-  }
-
-  if (
-    scores.autonomy >= 4 &&
-    scores.problem_solving >= 4 &&
-    scores.presentation <= 2
-  ) {
-    archetype = "Especialista Técnico de Bastidor";
-  }
-
-  // PASSO 3 — Prontidão para liderança
-  let leadershipReadiness = "Baixa";
-
-  const leadershipScore =
-    scores.communication +
-    scores.presentation +
-    scores.problem_solving +
-    scores.autonomy;
-
-  if (leadershipScore >= 16) {
-    leadershipReadiness = "Alta";
-  } else if (leadershipScore >= 12) {
-    leadershipReadiness = "Moderada";
-  }
-
-  // PASSO 4 — Inconsistências detectadas
-  const inconsistencies = [];
-
-  if (
-    discursive.challenge.length > 300 &&
-    scores.communication <= 2
-  ) {
-    inconsistencies.push(
-      "Discurso sofisticado com possível dificuldade prática de articulação organizacional."
-    );
-  }
-
-  if (
-    scores.autonomy >= 4 &&
-    scores.documentation <= 2
-  ) {
-    inconsistencies.push(
-      "Alta percepção de autonomia com baixa maturidade de documentação."
-    );
-  }
-
-  const userPrompt = `DADOS DO PROFISSIONAL AVALIADO:
+        const userPrompt = `DADOS DO PROFISSIONAL AVALIADO:
 - Nome: ${profile.name}
 - Cargo Atual: ${profile.role}
 - Experiência: ${profile.experience || "Não informada"}
 - Data da Avaliação: ${profile.date}
 
-NOTAS AUTOAVALIADAS DE 1 A 5 (Mapeando o Radar de 10 Pontos):
+NOTAS AUTOAVALIADAS DE 1 A 5 (Mapeando o Radar de 12 Pontos):
 1. Pesquisa com Usuário: ${scores.research} / 5
 2. Design de Interfaces: ${scores.ui} / 5
-3. Arquitetura de Informação: ${scores.architecture} / 5
-4. Documentação & Entregas: ${scores.documentation} / 5
-5. Feedback & Iteração: ${scores.feedback_iter} / 5
-6. Comunicação & Colaboração: ${scores.communication} / 5
-7. Receber Feedback: ${scores.receive_feedback} / 5
-8. Resolução de Problemas: ${scores.problem_solving} / 5
-9. Autonomia: ${scores.autonomy} / 5
-10. Apresentar: ${scores.presentation} / 5
+3. Ferramentas de Design: ${scores.tools} / 5
+4. Análise, Métricas e Dados de UX: ${scores.metrics} / 5
+5. Arquitetura de Informação: ${scores.architecture} / 5
+6. Documentação & Entregas: ${scores.documentation} / 5
+7. Feedback & Iteração: ${scores.feedback_iter} / 5
+8. Comunicação & Colaboração em Equipe: ${scores.communication} / 5
+9. Receber Feedback: ${scores.receive_feedback} / 5
+10. Resolução de Problemas: ${scores.problem_solving} / 5
+11. Autonomia: ${scores.autonomy} / 5
+12. Apresentar: ${scores.presentation} / 5
 
-CAMADA DE INTELIGÊNCIA:
-
-Arquétipo Inferido:
-${archetype}
-
-Prontidão para Liderança:
-${leadershipReadiness}
-
-Competências Mais Fortes:
-${highestCompetencies.map(([k, v]) => `${k}: ${v}`).join(', ')}
-
-Competências Mais Fracas:
-${lowestCompetencies.map(([k, v]) => `${k}: ${v}`).join(', ')}
-
-Inconsistências Detectadas:
-${inconsistencies.join(' | ') || "Nenhuma inconsistência relevante detectada."}
-
-
-RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
+RESPOSTAS QUALITATIVAS DISCURSIVAS:
 1. Qual é sua principal expectativa ao participar desse programa de mentoria?
 "${discursive.systems || "Sem resposta preenchida."}"
 
@@ -595,48 +563,49 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
       )}
 
       {/* Header */}
-     <header className="border-b border-white/10 bg-[#071226]">
-  <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-
-    {/* ESQUERDA */}
-    <div className="flex items-center gap-4">
-      <img
-  src={`${import.meta.env.BASE_URL}foton.png`}
-  alt="Fóton"
-  className="h-10 object-contain"
-/>
-
-
-      <div className="w-px h-10 bg-white/10" />
-
-      <div>
-        <h1 className="text-2xl font-bold text-white">
-          Assessment Executivo UX/UI
-        </h1>
-
-        <p className="text-sm text-white/60">
-          Programa Experimental de Desenvolvimento Profissional
-        </p>
-      </div>
-    </div>
-
-    {/* DIREITA */}
-    <div className="flex items-center gap-4">
-
-      <div className="hidden md:flex items-center px-3 py-1 rounded-full border border-yellow-400/30 bg-yellow-400/10 text-[##f6812b] text-xs font-medium">
-        Uso Interno Experimental
-      </div>
-
-      <img
-  src={`${import.meta.env.BASE_URL}caixa.png`}
-  alt="Caixa"
-  className="h-12 object-contain"
-/>
-
-    </div>
-
-  </div>
-</header>
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-4 px-6 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="font-bold text-lg text-slate-900 dark:text-white leading-tight">Autodiagnóstico UX/UI</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Plataforma Avançada de Mapeamento Técnico & Comportamental</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('input')}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                activeTab === 'input' 
+                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50' 
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              Mapeamento de Dados
+            </button>
+            <button
+              onClick={() => { if (report) setActiveTab('report'); }}
+              disabled={!report}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 ${
+                !report ? 'opacity-50 cursor-not-allowed text-slate-400' :
+                activeTab === 'report' 
+                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50' 
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+              Ver Relatório Gerado
+            </button>
+          </div>
+        </div>
+      </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {activeTab === 'input' ? (
@@ -646,11 +615,11 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
             <div className="lg:col-span-7 space-y-8">
               
               {/* ÁREA DE UPLOAD REAL DE PLANILHA (XLSX / CSV) */}
-              <div className="bg-gradient-to-br from-[#071226] via-[#0B1730] to-[#09254A] border border-[#005CA9]/30 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#005CA9] rounded-full blur-2xl"></div>
+              <div className="bg-gradient-to-br from-indigo-950 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 rounded-full blur-2xl"></div>
                 
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#050816] bg-[#F6812B] px-2.5 py-1 rounded-md">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 bg-indigo-800/40 px-2.5 py-1 rounded-md">
                     Processamento Inteligente XLS/CSV
                   </span>
                 </div>
@@ -667,7 +636,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                     onChange={handleFileChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 mx-auto text-[#F9B000] mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 mx-auto text-indigo-300 mb-2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
                   </svg>
                   <p className="text-xs font-semibold">Arraste a planilha aqui ou clique para selecionar</p>
@@ -677,7 +646,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                 {/* Seletor quando múltiplos profissionais forem encontrados na Planilha */}
                 {multipleProfessionals.length > 0 && (
                   <div className="mt-5 pt-4 border-t border-indigo-500/20">
-                    <p className="text-xs font-bold text-[#F9B000] mb-2.5 flex items-center gap-1.5">
+                    <p className="text-xs font-bold text-indigo-300 mb-2.5 flex items-center gap-1.5">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0110.081 12H15m-1.5-1.5H1.5A1.5 1.5 0 000 12v3c0 .828.672 1.5 1.5 1.5h1.318a4.502 4.502 0 0010.364 0H15" />
                       </svg>
@@ -747,13 +716,13 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                       type="date"
                       value={profile.date}
                       onChange={(e) => setProfile(prev => ({ ...prev, date: e.target.value }))}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-indigo-200 dark:border-[#005ca9] focus:border-indigo-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-indigo-600 dark:text-[#ffffff]"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-indigo-200 dark:border-indigo-900 focus:border-indigo-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-indigo-600 dark:text-indigo-400"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Avaliação Quantitativa - 10 Competências */}
+              {/* Avaliação Quantitativa - 12 Competências */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-5">
                 <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
                   <h3 className="font-bold text-slate-900 dark:text-white text-lg">2. Autoavaliação Técnica & Comportamental (1 a 5)</h3>
@@ -768,7 +737,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                           <span className="font-semibold text-xs text-slate-800 dark:text-slate-200">{comp.label}</span>
                           <p className="text-[10px] text-slate-400 dark:text-slate-500 line-clamp-1">{comp.desc}</p>
                         </div>
-                        <span className="bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-[#f6812b] font-bold px-2 py-0.5 rounded text-xs ml-2">
+                        <span className="bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-bold px-2 py-0.5 rounded text-xs ml-2">
                           {scores[comp.id] || 1}
                         </span>
                       </div>
@@ -779,9 +748,8 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                         step="1"
                         value={scores[comp.id] || 1}
                         onChange={(e) => handleScoreChange(comp.id, e.target.value)}
-                        className="w-full accent-[#f6812b] cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg"
+                        className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg"
                       />
-
                     </div>
                   ))}
                 </div>
@@ -797,11 +765,11 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                     Qual é sua principal expectativa ao participar desse programa de mentoria?
+                      Qual é sua principal expectativa ao participar desse programa de mentoria?
                     </label>
                     <textarea
                       rows="3"
-                      placeholder="Expectativa mentoria"
+                      placeholder="Descreva sua expectativa principal com a mentoria..."
                       value={discursive.systems}
                       onChange={(e) => handleDiscursiveChange('systems', e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -814,7 +782,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                     </label>
                     <textarea
                       rows="3"
-                      placeholder="Descreva os desafios de design que você tem enfrentado e as habilidades que deseja aprimorar..."
+                      placeholder="Descreva habilidades desejadas, desafios atuais e pontos de desenvolvimento percebidos..."
                       value={discursive.challenge}
                       onChange={(e) => handleDiscursiveChange('challenge', e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -827,7 +795,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                     </label>
                     <textarea
                       rows="3"
-                      placeholder="Principais gaps de conhecimento ou práticas que você percebe em seu trabalho de UX..."
+                      placeholder="Descreva gaps de conhecimento, práticas ou maturidade profissional percebidos..."
                       value={discursive.success}
                       onChange={(e) => handleDiscursiveChange('success', e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -840,7 +808,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
               <button
                 onClick={generateReport}
                 disabled={loading}
-                className="w-full bg-[#005CA9] hover:bg-[#0B63CE] disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition flex items-center justify-center gap-3 text-base"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition flex items-center justify-center gap-3 text-base"
               >
                 {loading ? (
                   <>
@@ -865,7 +833,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
             <div className="lg:col-span-5 space-y-6">
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm sticky top-28">
                 <div className="border-b border-slate-100 dark:border-slate-800 pb-3 mb-6">
-                  <h3 className="font-bold text-slate-900 dark:text-white text-base">Radar de Competências (10 Eixos)</h3>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base">Radar de Competências (12 Eixos)</h3>
                   <p className="text-slate-500 dark:text-slate-400 text-xs">Mapeamento multidimensional de {profile.name || "Profissional"}.</p>
                 </div>
 
@@ -883,7 +851,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                           key={`level-${level}`}
                           points={levelPoints}
                           fill="none"
-                          stroke="rgba(0, 92, 169, 0.15)"
+                          stroke="rgba(99, 102, 241, 0.15)"
                           strokeWidth="1"
                         />
                       );
@@ -909,8 +877,8 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                     {/* Área do Polígono das Notas do Candidato */}
                     <polygon
                       points={points}
-                      fill="rgba(0, 92, 169, 0.2)"
-                      stroke="rgba(0, 92, 169, 0.85)"
+                      fill="rgba(99, 102, 241, 0.2)"
+                      stroke="rgba(99, 102, 241, 0.85)"
                       strokeWidth="2.5"
                     />
 
@@ -924,7 +892,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                           cx={x}
                           cy={y}
                           r="5"
-                          className="fill-indigo-600 dark:fill-[#f6812b] stroke-white dark:stroke-slate-900"
+                          className="fill-indigo-600 dark:fill-indigo-400 stroke-white dark:stroke-slate-900"
                           strokeWidth="1.5"
                         />
                       );
@@ -953,14 +921,14 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                 </div>
 
                 <div className="mt-6 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl p-4 border border-indigo-100/50 dark:border-indigo-950">
-                  <h4 className="font-semibold text-xs text-[#005CA9] dark:text-[#ffffff] mb-1.5 flex items-center gap-1.5">
+                  <h4 className="font-semibold text-xs text-indigo-900 dark:text-indigo-400 mb-1.5 flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.063 1.062L10.83 13.84a.75.75 0 01-1.06 0l-2.06-2.06a.75.75 0 011.06-1.06l1.53 1.53 2.45-2.45z" />
                     </svg>
-                    Diagnóstico Decagonal Ativo
+                    Diagnóstico Multidimensional Ativo
                   </h4>
-                  <p className="text-[11px]  dark:text-[#FFFFFF] leading-relaxed">
-                    Com dez competências estruturadas, você obtém uma teia muito mais precisa e fidedigna. O mentor cruzará esses dados para indicar a prontidão de transição em Y (Especialista vs. Gestão).
+                  <p className="text-[11px] text-indigo-950 dark:text-indigo-300 leading-relaxed">
+                    Com doze competências estruturadas, você obtém uma teia muito mais precisa e fidedigna. O mentor cruzará esses dados para indicar a prontidão de transição em Y (Especialista vs. Gestão).
                   </p>
                 </div>
               </div>
@@ -990,7 +958,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="flex-1 sm:flex-initial bg-[#005CA9] hover:bg-[#0B63CE] text-white px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-sm"
+                  className="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-sm"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12-1.227H7.231c-.615 0-1.11-.474-1.12-1.09L6.34 18m11.318-6.318A12.048 12.048 0 0015 7.5a12.048 12.048 0 00-2.682 4.182m0 0a12.05 12.05 0 01-4.636 0M12 7.5V3m0 0L8.25 6M12 3l3.75 3" />
@@ -1028,7 +996,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
             key={`report-level-${level}`}
             points={levelPoints}
             fill="none"
-            stroke="rgba(0, 92, 169, 0.15)"
+            stroke="rgba(99, 102, 241, 0.15)"
             strokeWidth="1"
           />
         );
@@ -1055,7 +1023,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
       {/* Polígono */}
       <polygon
         points={points}
-        fill="rgba(0, 92, 169, 0.2)"
+        fill="rgba(99, 102, 241, 0.2)"
         stroke="rgba(99, 102, 241, 0.85)"
         strokeWidth="2.5"
       />
@@ -1071,7 +1039,7 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
             cx={x}
             cy={y}
             r="5"
-            className="fill-indigo-600 dark:fill-[#f6812b] stroke-white dark:stroke-[#1e293b]"
+            className="fill-indigo-600 dark:fill-indigo-400 stroke-white dark:stroke-slate-900"
             strokeWidth="1.5"
           />
         );
@@ -1166,10 +1134,6 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS PARA MENTORIA:
             </div>
           </div>
         )}
-
-        <footer className="mt-12 border-t border-white/10 py-6 text-center text-sm text-white/40">
-  Powered by Fóton + Inteligência Artificial Generativa • Caixa Econômica Federal • Uso interno experimental
-</footer>
 
       </main>
 
