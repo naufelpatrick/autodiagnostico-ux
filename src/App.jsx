@@ -1,8 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { systemPrompt } from './config/prompts.jsx';
 
-import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType
+} from "docx";
+
+
 import { saveAs } from "file-saver";
+
+
 
 // Definição das 10 novas competências avaliadas
 const COMPETENCIES = [
@@ -443,66 +457,149 @@ const handleExportDocx = async () => {
     return;
   }
 
-  const lines = report.split("\n");
+  const isTableLine = (line) => line.trim().startsWith("|") && line.trim().endsWith("|");
 
-  const paragraphs = lines
-  .filter((line) => {
+  const isSeparatorLine = (line) => {
+    const cleaned = line
+      .trim()
+      .replace(/\|/g, "")
+      .replace(/:/g, "")
+      .replace(/-/g, "")
+      .trim();
+
+    return cleaned === "";
+  };
+
+  const splitTableRow = (line) =>
+    line
+      .trim()
+      .split("|")
+      .map((cell) => cell.trim())
+      .filter(Boolean);
+
+  const children = [];
+
+  children.push(
+    new Paragraph({
+      text: "Relatório Executivo UX/UI",
+      heading: HeadingLevel.TITLE,
+      spacing: { after: 300 },
+    }),
+    new Paragraph(`Profissional: ${profile.name || "Não informado"}`),
+    new Paragraph(`Cargo: ${profile.role || "Não informado"}`),
+    new Paragraph({
+      text: `Data: ${profile.date || "Não informada"}`,
+      spacing: { after: 300 },
+    })
+  );
+
+  const lines = report.split("\n");
+  let tableRows = [];
+
+  const flushTable = () => {
+    if (tableRows.length === 0) return;
+
+    const table = new Table({
+      width: {
+        size: 100,
+        type: WidthType.PERCENTAGE,
+      },
+      rows: tableRows.map((row, rowIndex) =>
+        new TableRow({
+          children: row.map((cell) =>
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: cell.replace(/\*\*/g, ""),
+                      bold: rowIndex === 0,
+                      size: 20,
+                    }),
+                  ],
+                }),
+              ],
+            })
+          ),
+        })
+      ),
+    });
+
+    children.push(table);
+    children.push(new Paragraph(""));
+
+    tableRows = [];
+  };
+
+  lines.forEach((line) => {
     const trimmed = line.trim();
 
-    if (trimmed === "---") return false;
-
-    if (
-      trimmed.startsWith("|") &&
-      trimmed
-        .replace(/\|/g, "")
-        .replace(/:/g, "")
-        .replace(/-/g, "")
-        .trim() === ""
-    ) {
-      return false;
+    if (!trimmed || trimmed === "---") {
+      flushTable();
+      children.push(new Paragraph(""));
+      return;
     }
 
-    return true;
-  })
-  .map((line) => {
-
-
-    const cleanLine = line.replace(/^#{1,3}\s*/, "").trim();
-
-    if (line.startsWith("# ")) {
-      return new Paragraph({
-        text: cleanLine,
-        heading: HeadingLevel.HEADING_1,
-        spacing: { after: 240 },
-      });
+    if (isTableLine(trimmed)) {
+      if (!isSeparatorLine(trimmed)) {
+        tableRows.push(splitTableRow(trimmed));
+      }
+      return;
     }
 
-    if (line.startsWith("## ")) {
-      return new Paragraph({
-        text: cleanLine,
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 240, after: 160 },
-      });
+    flushTable();
+
+    const cleanLine = trimmed
+      .replace(/^#{1,3}\s*/, "")
+      .replace(/\*\*/g, "");
+
+    if (trimmed.startsWith("# ")) {
+      children.push(
+        new Paragraph({
+          text: cleanLine,
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 260, after: 160 },
+        })
+      );
+      return;
     }
 
-    if (line.startsWith("### ")) {
-      return new Paragraph({
-        text: cleanLine,
-        heading: HeadingLevel.HEADING_3,
-        spacing: { before: 180, after: 120 },
-      });
+    if (trimmed.startsWith("## ")) {
+      children.push(
+        new Paragraph({
+          text: cleanLine,
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 240, after: 140 },
+        })
+      );
+      return;
     }
 
-    return new Paragraph({
-      children: [
-        new TextRun({
-          text: cleanLine || " ",
-          size: 22,
-        }),
-      ],
-      spacing: { after: 120 },
-    });
+    if (trimmed.startsWith("### ")) {
+      children.push(
+        new Paragraph({
+          text: cleanLine,
+          heading: HeadingLevel.HEADING_3,
+          spacing: { before: 200, after: 120 },
+        })
+      );
+      return;
+    }
+
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: cleanLine,
+            size: 22,
+          }),
+        ],
+        spacing: { after: 120 },
+      })
+    );
   });
+
+  flushTable();
 
   const safeName = (profile.name || "profissional")
     .toLowerCase()
@@ -512,24 +609,7 @@ const handleExportDocx = async () => {
   const doc = new Document({
     sections: [
       {
-        children: [
-          new Paragraph({
-            text: "Relatório Executivo UX/UI",
-            heading: HeadingLevel.TITLE,
-            spacing: { after: 300 },
-          }),
-          new Paragraph({
-            children: [new TextRun(`Profissional: ${profile.name || "Não informado"}`)],
-          }),
-          new Paragraph({
-            children: [new TextRun(`Cargo: ${profile.role || "Não informado"}`)],
-          }),
-          new Paragraph({
-            children: [new TextRun(`Data: ${profile.date || "Não informada"}`)],
-            spacing: { after: 300 },
-          }),
-          ...paragraphs,
-        ],
+        children,
       },
     ],
   });
