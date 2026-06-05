@@ -445,7 +445,28 @@ const handleExportDocx = async () => {
 
   const lines = report.split("\n");
 
-  const paragraphs = lines.map((line) => {
+  const paragraphs = lines
+  .filter((line) => {
+    const trimmed = line.trim();
+
+    if (trimmed === "---") return false;
+
+    if (
+      trimmed.startsWith("|") &&
+      trimmed
+        .replace(/\|/g, "")
+        .replace(/:/g, "")
+        .replace(/-/g, "")
+        .trim() === ""
+    ) {
+      return false;
+    }
+
+    return true;
+  })
+  .map((line) => {
+
+
     const cleanLine = line.replace(/^#{1,3}\s*/, "").trim();
 
     if (line.startsWith("# ")) {
