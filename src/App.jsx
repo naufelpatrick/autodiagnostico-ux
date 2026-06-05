@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { systemPrompt } from './config/prompts.jsx';
 
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
+import { saveAs } from "file-saver";
+
 // Definição das 10 novas competências avaliadas
 const COMPETENCIES = [
   { id: 'research', label: 'Pesquisa com Usuário', desc: 'Condução de pesquisas, entrevistas, testes de usabilidade e síntese de dados.' },
@@ -433,6 +436,87 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS:
   setLoading(false);
 }
 };
+
+const handleExportDocx = async () => {
+  if (!report) {
+    setError("Nenhum relatório disponível para exportar.");
+    return;
+  }
+
+  const lines = report.split("\n");
+
+  const paragraphs = lines.map((line) => {
+    const cleanLine = line.replace(/^#{1,3}\s*/, "").trim();
+
+    if (line.startsWith("# ")) {
+      return new Paragraph({
+        text: cleanLine,
+        heading: HeadingLevel.HEADING_1,
+        spacing: { after: 240 },
+      });
+    }
+
+    if (line.startsWith("## ")) {
+      return new Paragraph({
+        text: cleanLine,
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 240, after: 160 },
+      });
+    }
+
+    if (line.startsWith("### ")) {
+      return new Paragraph({
+        text: cleanLine,
+        heading: HeadingLevel.HEADING_3,
+        spacing: { before: 180, after: 120 },
+      });
+    }
+
+    return new Paragraph({
+      children: [
+        new TextRun({
+          text: cleanLine || " ",
+          size: 22,
+        }),
+      ],
+      spacing: { after: 120 },
+    });
+  });
+
+  const safeName = (profile.name || "profissional")
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w-]/g, "");
+
+  const doc = new Document({
+    sections: [
+      {
+        children: [
+          new Paragraph({
+            text: "Relatório Executivo UX/UI",
+            heading: HeadingLevel.TITLE,
+            spacing: { after: 300 },
+          }),
+          new Paragraph({
+            children: [new TextRun(`Profissional: ${profile.name || "Não informado"}`)],
+          }),
+          new Paragraph({
+            children: [new TextRun(`Cargo: ${profile.role || "Não informado"}`)],
+          }),
+          new Paragraph({
+            children: [new TextRun(`Data: ${profile.date || "Não informada"}`)],
+            spacing: { after: 300 },
+          }),
+          ...paragraphs,
+        ],
+      },
+    ],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  saveAs(blob, `relatorio-${safeName}.docx`);
+};
+
 
   // Auxiliar para copiar o relatório gerado
   const handleCopyToClipboard = () => {
@@ -965,6 +1049,12 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS:
                   </svg>
                   Imprimir / PDF
                 </button>
+                <button
+                  onClick={handleExportDocx}
+                  className="flex-1 sm:flex-initial bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                >
+                Exportar DOCX
+              </button>
               </div>
             </div>
 
