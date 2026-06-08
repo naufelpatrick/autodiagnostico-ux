@@ -1,13 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { systemPrompt } from './config/prompts.jsx';
-
-
 import React, { useState, useEffect, useRef } from 'react';
-import { toPng } from "html-to-image";
-
-
-//import docx para geração de arquivos .docx a partir do relatório gerado
-
+import { systemPrompt } from './config/prompts.jsx';
+import { toPng } from 'html-to-image';
 import {
   Document,
   Packer,
@@ -18,12 +11,10 @@ import {
   TableRow,
   TableCell,
   WidthType,
-  ImageRun
-} from "docx";
-
-
-import { saveAs } from "file-saver";
-
+  ImageRun,
+  AlignmentType
+} from 'docx';
+import { saveAs } from 'file-saver';
 
 // Definição das 10 novas competências avaliadas
 const COMPETENCIES = [
@@ -485,6 +476,27 @@ const handleExportDocx = async () => {
       .map((cell) => cell.trim())
       .filter(Boolean);
 
+  const cleanInlineMarkdown = (text) =>
+    String(text || "")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/\*\*/g, "")
+      .replace(/__/g, "")
+      .replace(/\*/g, "")
+      .trim();
+
+  const createTextParagraph = (text, options = {}) =>
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: cleanInlineMarkdown(text) || " ",
+          size: options.size || 22,
+          bold: options.bold || false,
+        }),
+      ],
+      spacing: options.spacing || { after: 120 },
+      alignment: options.alignment,
+    });
+
   const children = [];
 
   children.push(
@@ -493,13 +505,51 @@ const handleExportDocx = async () => {
       heading: HeadingLevel.TITLE,
       spacing: { after: 300 },
     }),
-    new Paragraph(`Profissional: ${profile.name || "Não informado"}`),
-    new Paragraph(`Cargo: ${profile.role || "Não informado"}`),
-    new Paragraph({
-      text: `Data: ${profile.date || "Não informada"}`,
+    createTextParagraph(`Profissional: ${profile.name || "Não informado"}`, { bold: true }),
+    createTextParagraph(`Cargo: ${profile.role || "Não informado"}`),
+    createTextParagraph(`Data: ${profile.date || "Não informada"}`, {
       spacing: { after: 300 },
     })
   );
+
+  // Captura o radar renderizado na tela e insere como imagem no DOCX.
+  // Se a captura falhar por qualquer motivo, o DOCX ainda será gerado sem quebrar.
+  try {
+    if (radarRef.current) {
+      const dataUrl = await toPng(radarRef.current, {
+        cacheBust: true,
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+      });
+
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const radarImage = await blob.arrayBuffer();
+
+      children.push(
+        new Paragraph({
+          text: "Radar de Competências",
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 300, after: 180 },
+        }),
+        new Paragraph({
+          children: [
+            new ImageRun({
+              data: radarImage,
+              transformation: {
+                width: 520,
+                height: 520,
+              },
+            }),
+          ],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 300 },
+        })
+      );
+    }
+  } catch (err) {
+    console.warn("Não foi possível inserir o radar no DOCX:", err);
+  }
 
   const lines = report.split("\n");
   let tableRows = [];
@@ -516,17 +566,20 @@ const handleExportDocx = async () => {
         new TableRow({
           children: row.map((cell) =>
             new TableCell({
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: cell.replace(/\*\*/g, ""),
-                      bold: rowIndex === 0,
-                      size: 20,
-                    }),
-                  ],
-                }),
-              ],
+              children: cleanInlineMarkdown(cell)
+                .split("\n")
+                .map((part) =>
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: part || " ",
+                        bold: rowIndex === 0,
+                        size: rowIndex === 0 ? 20 : 19,
+                      }),
+                    ],
+                    spacing: { after: 80 },
+                  })
+                ),
             })
           ),
         })
@@ -535,7 +588,6 @@ const handleExportDocx = async () => {
 
     children.push(table);
     children.push(new Paragraph(""));
-
     tableRows = [];
   };
 
@@ -557,9 +609,7 @@ const handleExportDocx = async () => {
 
     flushTable();
 
-    const cleanLine = trimmed
-      .replace(/^#{1,3}\s*/, "")
-      .replace(/\*\*/g, "");
+    const cleanLine = cleanInlineMarkdown(trimmed.replace(/^#{1,3}\s*/, ""));
 
     if (trimmed.startsWith("# ")) {
       children.push(
@@ -594,17 +644,7 @@ const handleExportDocx = async () => {
       return;
     }
 
-    children.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: cleanLine,
-            size: 22,
-          }),
-        ],
-        spacing: { after: 120 },
-      })
-    );
+    children.push(createTextParagraph(cleanLine));
   });
 
   flushTable();
@@ -626,8 +666,7 @@ const handleExportDocx = async () => {
   saveAs(blob, `relatorio-${safeName}.docx`);
 };
 
-
-  // Auxiliar para copiar o relatório gerado
+// Auxiliar para copiar o relatório gerado
   const handleCopyToClipboard = () => {
     const tempTextArea = document.createElement('textarea');
     tempTextArea.value = report;
@@ -1168,7 +1207,7 @@ const handleExportDocx = async () => {
             </div>
 
             {/* Radar dentro do relatório para PDF */}
-<div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 mb-8">
+<div ref={radarRef} className="bg-white text-slate-900 border border-slate-200 rounded-2xl p-6 mb-8">
 
   <div className="mb-5">
     <h3 className="font-bold text-slate-900 dark:text-white text-lg">
@@ -1305,7 +1344,7 @@ const handleExportDocx = async () => {
               </div>
               <h3 className="font-bold text-slate-950 dark:text-white text-lg">Mapeando Maturidade...</h3>
               <p className="text-slate-500 dark:text-slate-400 text-xs text-center">
-                O mentor sênior está decodificando as 10 notas quantitativas e cruzando dados qualitativos para estruturar as tabelas executivas e o plano de ação personalizado.
+                O mentor sênior está decodificando as 12 notas quantitativas e cruzando dados qualitativos para estruturar as tabelas executivas e o plano de ação personalizado.
               </p>
             </div>
           </div>

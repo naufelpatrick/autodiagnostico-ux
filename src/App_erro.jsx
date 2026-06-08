@@ -1,6 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { systemPrompt } from './config/prompts.jsx';
-import * as XLSX from "xlsx";
+
+//import docx para geração de arquivos .docx a partir do relatório gerado
+
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  ImageRun
+} from "docx";
+
+
+import { saveAs } from "file-saver";
 
 
 // Definição das 10 novas competências avaliadas
@@ -21,6 +38,7 @@ const COMPETENCIES = [
 
 export default function App() {
   // Estado padrão limpo para o formulário
+  const radarRef = useRef(null);
   const [profile, setProfile] = useState({
     name: '',
     role: '',
@@ -47,8 +65,7 @@ export default function App() {
   const [discursive, setDiscursive] = useState({
     systems: '',
     challenge: '',
-    success: '',
-    gaps: ''
+    success: ''
   });
 
   // Estado da geração do relatório
@@ -63,7 +80,7 @@ export default function App() {
   const [selectedMappingIndex, setSelectedMappingIndex] = useState(null);
   const [customToast, setCustomToast] = useState(null);
 
-  /* Carregar dinamicamente a biblioteca XLSX (SheetJS) por CDN para leitura de planilhas
+  // Carregar dinamicamente a biblioteca XLSX (SheetJS) por CDN para leitura de planilhas
   useEffect(() => {
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
@@ -75,7 +92,7 @@ export default function App() {
         existing.remove();
       }
     };
-  }, []);*/
+  }, []);
 
   // Mostrar mensagens customizadas elegantes na UI (evitando alert)
   const showToast = (title, message, type = "success") => {
@@ -100,7 +117,7 @@ export default function App() {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!XLSX) {
+    if (!window.XLSX) {
       setError("A biblioteca de processamento de planilhas ainda está carregando no navegador. Aguarde 3 segundos e tente novamente.");
       return;
     }
@@ -111,14 +128,14 @@ export default function App() {
     reader.onload = (evt) => {
       try {
         const dataBinary = evt.target.result;
-        const workbook = XLSX.read(dataBinary, { type: 'binary' });
+        const workbook = window.XLSX.read(dataBinary, { type: 'binary' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
         // Converter em matriz de dados por posição de coluna.
         // Importante: as competências quantitativas usam colunas fixas da planilha
         // para evitar erro de leitura por cabeçalhos parecidos.
-        const rowsArray = XLSX.utils.sheet_to_json(worksheet, {
+        const rowsArray = window.XLSX.utils.sheet_to_json(worksheet, {
           header: 1,
           defval: ""
         });
@@ -188,18 +205,30 @@ export default function App() {
             "Experiência não informada";
 
           // Mapeamento oficial por coluna da planilha:
-          const research = toScore(getCellByColumn(rowArray, "M"));
-          const ui = toScore(getCellByColumn(rowArray, "O"));
-          const architecture = toScore(getCellByColumn(rowArray, "Q"));
-          const tools = toScore(getCellByColumn(rowArray, "S"));
-          const metrics = toScore(getCellByColumn(rowArray, "U"));
-          const documentation = toScore(getCellByColumn(rowArray, "W"));
-          const feedback_iter = toScore(getCellByColumn(rowArray, "Y"));
-          const communication = toScore(getCellByColumn(rowArray, "AC"));
-          const receive_feedback = toScore(getCellByColumn(rowArray, "AE"));
-          const problem_solving = toScore(getCellByColumn(rowArray, "AG"));
-          const autonomy = toScore(getCellByColumn(rowArray, "AI"));
-          const presentation = toScore(getCellByColumn(rowArray, "AK"));
+          // L  = Pesquisa com Usuários
+          // N  = Design de Interfaces
+          // P  = Arquitetura de Informação
+          // R  = Ferramentas de Design
+          // T  = Análise, Métricas e Dados de UX
+          // V  = Documentação, Comunicação e Entregas de UX
+          // X  = Feedback e Iteração nas Entregas
+          // AB = Comunicação e Colaboração em Equipe
+          // AD = Habilidade de Receber e Dar Feedbacks
+          // AF = Adaptabilidade e Resolução de Problemas
+          // AH = Autonomia no Desenvolvimento de Projetos
+          // AJ = Apresentação para stakeholders
+          const research = toScore(getCellByColumn(rowArray, "L"));
+          const ui = toScore(getCellByColumn(rowArray, "N"));
+          const architecture = toScore(getCellByColumn(rowArray, "P"));
+          const tools = toScore(getCellByColumn(rowArray, "R"));
+          const metrics = toScore(getCellByColumn(rowArray, "T"));
+          const documentation = toScore(getCellByColumn(rowArray, "V"));
+          const feedback_iter = toScore(getCellByColumn(rowArray, "X"));
+          const communication = toScore(getCellByColumn(rowArray, "AB"));
+          const receive_feedback = toScore(getCellByColumn(rowArray, "AD"));
+          const problem_solving = toScore(getCellByColumn(rowArray, "AF"));
+          const autonomy = toScore(getCellByColumn(rowArray, "AH"));
+          const presentation = toScore(getCellByColumn(rowArray, "AJ"));
 
           // Respostas discursivas por coluna fixa:
           // AL = Expectativa
@@ -207,22 +236,22 @@ export default function App() {
           // AN = Desafios atuais
           // AO = Gaps percebidos
           const expectationText =
-            getCellByColumn(rowArray, "AM") ||
+            getCellByColumn(rowArray, "AL") ||
             findByHeader(["principal expectativa", "expectativa ao participar", "programa de mentoria"]) ||
             "Expectativa não informada.";
 
           const skillsText =
-            getCellByColumn(rowArray, "AN") ||
+            getCellByColumn(rowArray, "AM") ||
             findByHeader(["habilidades", "competencias especificas", "competências específicas", "desenvolver ou aprimorar"]) ||
             "Habilidades a desenvolver não informadas.";
 
           const challengesText =
-            getCellByColumn(rowArray, "AO") ||
+            getCellByColumn(rowArray, "AN") ||
             findByHeader(["desafios", "projetos de ux", "caso ja atue", "caso já atue"]) ||
             "Desafios atuais não informados.";
 
           const gapsText =
-            getCellByColumn(rowArray, "AP") ||
+            getCellByColumn(rowArray, "AO") ||
             findByHeader(["gaps", "conhecimento", "praticas", "práticas", "trabalho de ux"]) ||
             "Gaps percebidos não informados.";
 
@@ -246,14 +275,13 @@ export default function App() {
               presentation
             },
             discursive: {
-              expectation: expectationText,
-              skills: skillsText,
-              challenges: challengesText,
-              gaps: gapsText
-          }
+              systems: expectationText,
+              challenge: `${skillsText}\n\n${challengesText}`,
+              success: gapsText
+            }
           };
         });
-        console.log("PARSED LIST", parsedList);  
+
         setMultipleProfessionals(parsedList);
         setSelectedMappingIndex(0); // foca no primeiro por padrão
         
@@ -385,16 +413,13 @@ NOTAS AUTOAVALIADAS DE 1 A 5 (Mapeando o Radar de 12 Pontos):
 
 RESPOSTAS QUALITATIVAS DISCURSIVAS:
 1. Qual é sua principal expectativa ao participar desse programa de mentoria?
-"${discursive.expectation || "Sem resposta preenchida."}"
+"${discursive.systems || "Sem resposta preenchida."}"
 
-2. Quais habilidades ou competências específicas você gostaria de desenvolver ou aprimorar?
-"${discursive.skills || "Sem resposta preenchida."}"
+2. Quais habilidades ou competências específicas você gostaria de desenvolver ou aprimorar? Quais desafios você tem enfrentado atualmente em seus projetos de UX?
+"${discursive.challenge || "Sem resposta preenchida."}"
 
-3. Quais desafios você tem enfrentado atualmente em seus projetos de UX?
-"${discursive.challenges || "Sem resposta preenchida."}"
-
-4. Com base em suas atividades recentes, identifique os principais gaps de conhecimento ou práticas que você percebe em seu trabalho de UX.
-"${discursive.gaps || "Sem resposta preenchida."}"`;
+3. Com base em suas atividades recentes, identifique os principais gaps de conhecimento ou práticas que você percebe em seu trabalho de UX.
+"${discursive.success || "Sem resposta preenchida."}"`;
 
     const payload = {
       contents: [{ parts: [{ text: userPrompt }] }],
@@ -428,6 +453,174 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS:
   setLoading(false);
 }
 };
+
+const handleExportDocx = async () => {
+  if (!report) {
+    setError("Nenhum relatório disponível para exportar.");
+    return;
+  }
+
+  const isTableLine = (line) => line.trim().startsWith("|") && line.trim().endsWith("|");
+
+  const isSeparatorLine = (line) => {
+    const cleaned = line
+      .trim()
+      .replace(/\|/g, "")
+      .replace(/:/g, "")
+      .replace(/-/g, "")
+      .trim();
+
+    return cleaned === "";
+  };
+
+  const splitTableRow = (line) =>
+    line
+      .trim()
+      .split("|")
+      .map((cell) => cell.trim())
+      .filter(Boolean);
+
+  const children = [];
+
+  children.push(
+    new Paragraph({
+      text: "Relatório Executivo UX/UI",
+      heading: HeadingLevel.TITLE,
+      spacing: { after: 300 },
+    }),
+    new Paragraph(`Profissional: ${profile.name || "Não informado"}`),
+    new Paragraph(`Cargo: ${profile.role || "Não informado"}`),
+    new Paragraph({
+      text: `Data: ${profile.date || "Não informada"}`,
+      spacing: { after: 300 },
+    })
+  );
+
+  const lines = report.split("\n");
+  let tableRows = [];
+
+  const flushTable = () => {
+    if (tableRows.length === 0) return;
+
+    const table = new Table({
+      width: {
+        size: 100,
+        type: WidthType.PERCENTAGE,
+      },
+      rows: tableRows.map((row, rowIndex) =>
+        new TableRow({
+          children: row.map((cell) =>
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: cell.replace(/\*\*/g, ""),
+                      bold: rowIndex === 0,
+                      size: 20,
+                    }),
+                  ],
+                }),
+              ],
+            })
+          ),
+        })
+      ),
+    });
+
+    children.push(table);
+    children.push(new Paragraph(""));
+
+    tableRows = [];
+  };
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+
+    if (!trimmed || trimmed === "---") {
+      flushTable();
+      children.push(new Paragraph(""));
+      return;
+    }
+
+    if (isTableLine(trimmed)) {
+      if (!isSeparatorLine(trimmed)) {
+        tableRows.push(splitTableRow(trimmed));
+      }
+      return;
+    }
+
+    flushTable();
+
+    const cleanLine = trimmed
+      .replace(/^#{1,3}\s*/, "")
+      .replace(/\*\*/g, "");
+
+    if (trimmed.startsWith("# ")) {
+      children.push(
+        new Paragraph({
+          text: cleanLine,
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 260, after: 160 },
+        })
+      );
+      return;
+    }
+
+    if (trimmed.startsWith("## ")) {
+      children.push(
+        new Paragraph({
+          text: cleanLine,
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 240, after: 140 },
+        })
+      );
+      return;
+    }
+
+    if (trimmed.startsWith("### ")) {
+      children.push(
+        new Paragraph({
+          text: cleanLine,
+          heading: HeadingLevel.HEADING_3,
+          spacing: { before: 200, after: 120 },
+        })
+      );
+      return;
+    }
+
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: cleanLine,
+            size: 22,
+          }),
+        ],
+        spacing: { after: 120 },
+      })
+    );
+  });
+
+  flushTable();
+
+  const safeName = (profile.name || "profissional")
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w-]/g, "");
+
+  const doc = new Document({
+    sections: [
+      {
+        children,
+      },
+    ],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  saveAs(blob, `relatorio-${safeName}.docx`);
+};
+
 
   // Auxiliar para copiar o relatório gerado
   const handleCopyToClipboard = () => {
@@ -757,60 +950,47 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS:
                   <p className="text-slate-500 dark:text-slate-400 text-xs">Forneça as respostas literais para que o mentor cruze as justificativas com as notas do radar.</p>
                 </div>
 
-               <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Qual é sua principal expectativa ao participar desse programa de mentoria?
-                  </label>
-                  <textarea
-                    rows="3"
-                    placeholder="Descreva sua expectativa principal com a mentoria..."
-                    value={discursive.expectation}
-                    onChange={(e) => handleDiscursiveChange('expectation', e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Qual é sua principal expectativa ao participar desse programa de mentoria?
+                    </label>
+                    <textarea
+                      rows="3"
+                      placeholder="Descreva sua expectativa principal com a mentoria..."
+                      value={discursive.systems}
+                      onChange={(e) => handleDiscursiveChange('systems', e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Quais habilidades ou competências específicas você gostaria de desenvolver ou aprimorar?
-                  </label>
-                  <textarea
-                    rows="3"
-                    placeholder="Descreva habilidades ou competências que deseja desenvolver..."
-                    value={discursive.skills}
-                    onChange={(e) => handleDiscursiveChange('skills', e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Quais habilidades ou competências específicas você gostaria de desenvolver ou aprimorar? Quais desafios você tem enfrentado atualmente em seus projetos de UX?
+                    </label>
+                    <textarea
+                      rows="3"
+                      placeholder="Descreva habilidades desejadas, desafios atuais e pontos de desenvolvimento percebidos..."
+                      value={discursive.challenge}
+                      onChange={(e) => handleDiscursiveChange('challenge', e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Quais desafios você tem enfrentado atualmente em seus projetos de UX?
-                  </label>
-                  <textarea
-                    rows="3"
-                    placeholder="Descreva os principais desafios enfrentados em projetos de UX..."
-                    value={discursive.challenges}
-                    onChange={(e) => handleDiscursiveChange('challenges', e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Com base em suas atividades recentes, identifique os principais gaps de conhecimento ou práticas que você percebe em seu trabalho de UX.
-                  </label>
-                  <textarea
-                    rows="3"
-                    placeholder="Descreva gaps de conhecimento, práticas ou maturidade profissional percebidos..."
-                    value={discursive.gaps}
-                    onChange={(e) => handleDiscursiveChange('gaps', e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Com base em suas atividades recentes, identifique os principais gaps de conhecimento ou práticas que você percebe em seu trabalho de UX.
+                    </label>
+                    <textarea
+                      rows="3"
+                      placeholder="Descreva gaps de conhecimento, práticas ou maturidade profissional percebidos..."
+                      value={discursive.success}
+                      onChange={(e) => handleDiscursiveChange('success', e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
                 </div>
               </div>
-                            </div>
 
               {/* Botão de Geração */}
               <button
@@ -973,6 +1153,12 @@ RESPOSTAS QUALITATIVAS DISCURSIVAS:
                   </svg>
                   Imprimir / PDF
                 </button>
+                <button
+                  onClick={handleExportDocx}
+                  className="flex-1 sm:flex-initial bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                >
+                Exportar DOCX
+              </button>
               </div>
             </div>
 
