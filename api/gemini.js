@@ -94,8 +94,9 @@ export default async function handler(req, res) {
             content: userPrompt
           }
         ],
-        temperature: 0.4
-      })
+        temperature: 0.7,
+        max_tokens: 5000
+       })
     });
 
     const data = await response.json();
