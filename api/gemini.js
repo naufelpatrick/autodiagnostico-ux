@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+/*export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({
@@ -46,10 +46,10 @@ export default async function handler(req, res) {
       }
     });
   }
-}
+}*/
 
 
-/*export default async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
       error: {
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
         "X-Title": "Autodiagnostico UX"
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "deepseek/deepseek-chat-v3-0324",
         messages: [
           {
             role: "system",
@@ -95,11 +95,14 @@ export default async function handler(req, res) {
           }
         ],
         temperature: 0.7,
-        max_tokens: 
+        max_tokens: 9000,
+        stream: false
        })
     });
 
     const data = await response.json();
+
+    console.log("OPENROUTER RESPONSE:", JSON.stringify(data).slice(0, 1000));
 
     if (!response.ok) {
       return res.status(response.status).json(data);
@@ -138,4 +141,4 @@ export default async function handler(req, res) {
       }
     });
   }
-}*/
+}
