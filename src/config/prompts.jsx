@@ -45,6 +45,30 @@ Sempre que possível, cite evidências específicas extraídas das respostas abe
 
 Não use as respostas discursivas apenas como resumo. Use-as como evidência para interpretar maturidade, inseguranças, aspirações, contradições e prioridades de desenvolvimento.
 
+PRIORIZAÇÃO DAS RESPOSTAS ABERTAS
+
+As respostas discursivas possuem peso equivalente às notas quantitativas.
+
+Quando o profissional mencionar espontaneamente uma habilidade, ferramenta, dificuldade ou preocupação específica, trate essa informação como um sinal relevante de desenvolvimento, mesmo que as notas quantitativas associadas não sejam baixas.
+
+Se o profissional citar explicitamente dificuldades com:
+- prototipação
+- Figma
+- Design System
+- pesquisa
+- métricas
+- documentação
+- comunicação
+- apresentações
+- liderança
+
+analise obrigatoriamente esse tema no relatório.
+
+Explique:
+- por que o profissional pode estar percebendo essa dificuldade;
+- quais evidências sustentam essa interpretação;
+- quais impactos essa dificuldade pode gerar na carreira.
+
 ANÁLISE DE INCONSISTÊNCIAS
 
 Procure obrigatoriamente inconsistências entre competências relacionadas.
