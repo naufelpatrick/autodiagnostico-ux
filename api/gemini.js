@@ -102,6 +102,8 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    console.log("STATUS OPENROUTER:", response.status);
+    console.log("RESPOSTA OPENROUTER:", JSON.stringify(data, null, 2));
     console.log("OPENROUTER RESPONSE:", JSON.stringify(data).slice(0, 1000));
 
     if (!response.ok) {
@@ -111,12 +113,15 @@ export default async function handler(req, res) {
     const generatedText = data?.choices?.[0]?.message?.content;
 
     if (!generatedText) {
-      return res.status(500).json({
-        error: {
-          message: "OpenRouter não retornou conteúdo."
-        }
-      });
+  console.error("SEM TEXTO GERADO. RESPOSTA COMPLETA:", JSON.stringify(data, null, 2));
+
+  return res.status(500).json({
+    error: {
+      message: "OpenRouter não retornou conteúdo.",
+      details: data
     }
+  });
+}
 
     return res.status(200).json({
       candidates: [
