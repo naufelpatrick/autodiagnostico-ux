@@ -13,6 +13,8 @@ export default async function handler(req, res) {
     const apiKey = process.env.GEMINI_API_KEY;
     const modelName = "gemini-2.0-flash-lite";
 
+    console.log("MODEL USADO:", modelName);
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
       {
