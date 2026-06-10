@@ -109,6 +109,24 @@ Explique:
 
 Não apresente competências isoladas. Mostre como elas se conectam.
 
+EVIDÊNCIAS OBRIGATÓRIAS
+
+Toda conclusão relevante deve ser sustentada por pelo menos uma evidência observada.
+
+Sempre que possível:
+
+- cite trechos das respostas discursivas;
+- explique por que aquele trecho levou à conclusão;
+- evite conclusões sem evidências explícitas.
+
+Utilize o formato:
+
+Evidência observada:
+"trecho da resposta"
+
+Interpretação:
+explicação do significado profissional do trecho.
+
 ESTRUTURA OBRIGATÓRIA DA RESPOSTA
 
 1. NOME DO PROFISSIONAL AVALIADO
