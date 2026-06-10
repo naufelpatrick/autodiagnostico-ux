@@ -327,7 +327,7 @@ export default function App() {
 
  // Requisição para a API interna da Vercel
 const fetchGeminiReport = async (payload) => {
-  let retries = 3;
+  let retries = 1;
   let delay = 1000;
 
   for (let i = 0; i < retries; i++) {
@@ -346,10 +346,9 @@ const fetchGeminiReport = async (payload) => {
         return data;
       }
 
-      if (response.status === 429 || response.status >= 500) {
-        await new Promise(res => setTimeout(res, delay));
-        delay *= 2;
-        continue;
+      if (response.status === 429) {
+        throw new Error("Limite temporário da API atingido. Aguarde 1 minuto e tente novamente.");
+
       }
 
       throw new Error(
