@@ -83,7 +83,7 @@ export default async function handler(req, res) {
         "X-Title": "Autodiagnostico UX"
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-chat-v3-0324:free",
+        model: "deepseek/deepseek-chat-v3-0324",
         messages: [
           {
             role: "system",
