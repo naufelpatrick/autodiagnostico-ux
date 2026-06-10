@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const { payload } = req.body;
 
     const apiKey = process.env.GEMINI_API_KEY;
-    const modelName = "gemini-2.5-flash";
+    const modelName = "gemini-2.0-flash";
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
@@ -25,6 +25,7 @@ export default async function handler(req, res) {
     );
 
     const data = await response.json();
+    console.log(JSON.stringify(data, null, 2));
 
     if (!response.ok) {
       return res.status(response.status).json(data);
