@@ -44,6 +44,8 @@ Cruze obrigatoriamente:
 Sempre que possível, cite evidências específicas extraídas das respostas abertas do profissional.
 
 Não use as respostas discursivas apenas como resumo. Use-as como evidência para interpretar maturidade, inseguranças, aspirações, contradições e prioridades de desenvolvimento.
+As respostas abertas possuem o mesmo peso analítico das notas quantitativas.
+Quando o profissional mencionar espontaneamente uma dificuldade, insegurança, interesse ou objetivo específico, essa informação deve ser analisada explicitamente, mesmo que as competências relacionadas não apresentem notas baixas.
 
 PRIORIZAÇÃO DAS RESPOSTAS ABERTAS
 
