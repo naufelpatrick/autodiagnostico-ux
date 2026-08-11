@@ -130,9 +130,7 @@ export default function App() {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Converter em matriz de dados por posição de coluna.
-        // Importante: as competências quantitativas usam colunas fixas da planilha
-        // para evitar erro de leitura por cabeçalhos parecidos.
+        // Converter em matriz para usar a primeira linha como cabeçalhos.
         const rowsArray = XLSX.utils.sheet_to_json(worksheet, {
           header: 1,
           defval: ""
@@ -153,93 +151,107 @@ export default function App() {
           return;
         }
 
-        const columnToIndex = (col) => {
-          let index = 0;
-          const normalizedCol = col.toUpperCase().trim();
-
-          for (let i = 0; i < normalizedCol.length; i++) {
-            index = index * 26 + normalizedCol.charCodeAt(i) - 64;
-          }
-
-          return index - 1;
-        };
-
-        const getCellByColumn = (rowArray, col) => {
-          return rowArray[columnToIndex(col)];
-        };
-
         const toScore = (value) => {
           const parsed = parseInt(value, 10);
           return Math.min(5, Math.max(1, Number.isNaN(parsed) ? 3 : parsed));
         };
 
-        const normalizeText = (text) =>
-          String(text || "")
+        const normalizeHeader = (value) =>
+          String(value || "")
             .toLowerCase()
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, " ")
+            .replace(/\s+/g, " ")
             .trim();
 
-        const parsedList = dataRows.map((rowArray) => {
-          const findByHeader = (candidates) => {
-            const foundIndex = headers.findIndex((header) => {
-              const normalizedHeader = normalizeText(header);
-              return candidates.some((candidate) => normalizedHeader.includes(normalizeText(candidate)));
+        const normalizedHeaders = headers.map(normalizeHeader);
+
+        const findColumnIndex = (candidates, { scoreColumn = false } = {}) => {
+          const normalizedCandidates = candidates.map(normalizeHeader);
+          const matchingIndexes = normalizedCandidates.reduce((indexes, candidate) => {
+            normalizedHeaders.forEach((header, index) => {
+              const matches = header === candidate || header.includes(candidate);
+              if (matches && !indexes.includes(index)) indexes.push(index);
             });
+            return indexes;
+          }, []);
 
-            return foundIndex >= 0 ? rowArray[foundIndex] : "";
-          };
+          if (!scoreColumn) return matchingIndexes[0] ?? -1;
 
+          const commentTerms = ["comentario", "comente", "justifique", "explique", "descreva"];
+          const nonCommentIndexes = matchingIndexes.filter((index) =>
+            !commentTerms.some((term) => normalizedHeaders[index].includes(term))
+          );
+          const eligibleIndexes = nonCommentIndexes.length > 0 ? nonCommentIndexes : matchingIndexes;
+
+          return eligibleIndexes.find((index) =>
+            dataRows.some((row) => {
+              const value = Number(row[index]);
+              return Number.isFinite(value) && value >= 1 && value <= 5;
+            })
+          ) ?? eligibleIndexes[0] ?? -1;
+        };
+
+        const getByHeader = (rowArray, candidates, options) => {
+          const index = findColumnIndex(candidates, options);
+          return index >= 0 ? rowArray[index] : "";
+        };
+
+        const scoreColumns = [
+          { key: "research", label: "Pesquisa com Usuário", candidates: ["pesquisa com usuario", "pesquisa com usuarios"] },
+          { key: "ui", label: "Design de Interfaces", candidates: ["design de interfaces", "design de interface"] },
+          { key: "architecture", label: "Arquitetura de Informação", candidates: ["arquitetura de informacao"] },
+          { key: "tools", label: "Ferramentas de Design", candidates: ["ferramentas de design"] },
+          { key: "metrics", label: "Análise, Métricas e Dados de UX", candidates: ["analise metricas e dados de ux", "metricas e dados de ux"] },
+          { key: "documentation", label: "Documentação & Entregas", candidates: ["documentacao comunicacao e entregas de ux", "documentacao e entregas", "entregas de ux"] },
+          { key: "feedback_iter", label: "Feedback & Iteração", candidates: ["feedback iteracao", "feedback e iteracao"] },
+          { key: "communication", label: "Comunicação & Colaboração", candidates: ["comunicacao colaboracao", "comunicacao e colaboracao"] },
+          { key: "receive_feedback", label: "Receber Feedback", candidates: ["habilidade de receber e dar feedbacks", "receber e dar feedback", "receber feedback"] },
+          { key: "problem_solving", label: "Resolução de Problemas", candidates: ["resolucao de problemas"] },
+          { key: "autonomy", label: "Autonomia", candidates: ["autonomia"] },
+          { key: "presentation", label: "Apresentar", candidates: ["confortavel apresentando projetos", "apresentando projetos", "apresentar", "apresentacao"] }
+        ];
+
+        const scoreIndexes = Object.fromEntries(scoreColumns.map(({ key, label, candidates }) => {
+          const index = findColumnIndex(candidates, { scoreColumn: true });
+          if (index < 0) console.warn(`Coluna não localizada: ${label}`);
+          return [key, index];
+        }));
+
+        const parsedList = dataRows.map((rowArray) => {
           const name =
-            findByHeader(["nome", "profissional", "participante", "user", "name"]) ||
+            getByHeader(rowArray, ["nome", "profissional", "participante", "user", "name"]) ||
             "Profissional Sem Nome";
 
           const role =
-            findByHeader(["cargo", "funcao", "função", "titulo", "título", "role", "position"]) ||
+            getByHeader(rowArray, ["cargo", "funcao", "função", "titulo", "título", "role", "position"]) ||
             "Designer de Produto";
 
           const experience =
-            findByHeader(["experiencia", "experiência", "tempo", "anos", "senioridade"]) ||
+            getByHeader(rowArray, ["experiencia", "experiência", "tempo", "anos", "senioridade"]) ||
             "Experiência não informada";
 
-          // Mapeamento oficial por coluna da planilha:
-          const research = toScore(getCellByColumn(rowArray, "M"));
-          const ui = toScore(getCellByColumn(rowArray, "O"));
-          const architecture = toScore(getCellByColumn(rowArray, "Q"));
-          const tools = toScore(getCellByColumn(rowArray, "S"));
-          const metrics = toScore(getCellByColumn(rowArray, "U"));
-          const documentation = toScore(getCellByColumn(rowArray, "W"));
-          const feedback_iter = toScore(getCellByColumn(rowArray, "Y"));
-          const communication = toScore(getCellByColumn(rowArray, "AC"));
-          const receive_feedback = toScore(getCellByColumn(rowArray, "AE"));
-          const problem_solving = toScore(getCellByColumn(rowArray, "AG"));
-          const autonomy = toScore(getCellByColumn(rowArray, "AI"));
-          const presentation = toScore(getCellByColumn(rowArray, "AK"));
-
-          // Respostas discursivas por coluna fixa:
-          // AL = Expectativa
-          // AM = Habilidades a desenvolver
-          // AN = Desafios atuais
-          // AO = Gaps percebidos
           const expectationText =
-            getCellByColumn(rowArray, "AM") ||
-            findByHeader(["principal expectativa", "expectativa ao participar", "programa de mentoria"]) ||
+            getByHeader(rowArray, ["qual e sua principal expectativa ao participar desse programa de mentoria", "principal expectativa", "expectativa ao participar", "programa de mentoria"]) ||
             "Expectativa não informada.";
 
           const skillsText =
-            getCellByColumn(rowArray, "AN") ||
-            findByHeader(["habilidades", "competencias especificas", "competências específicas", "desenvolver ou aprimorar"]) ||
+            getByHeader(rowArray, ["quais habilidades ou competencias especificas voce gostaria de desenvolver ou aprimorar", "habilidades ou competencias especificas", "desenvolver ou aprimorar"]) ||
             "Habilidades a desenvolver não informadas.";
 
           const challengesText =
-            getCellByColumn(rowArray, "AO") ||
-            findByHeader(["desafios", "projetos de ux", "caso ja atue", "caso já atue"]) ||
+            getByHeader(rowArray, ["quais desafios voce tem enfrentado atualmente em seus projetos de ux", "desafios", "projetos de ux", "caso ja atue"]) ||
             "Desafios atuais não informados.";
 
           const gapsText =
-            getCellByColumn(rowArray, "AP") ||
-            findByHeader(["gaps", "conhecimento", "praticas", "práticas", "trabalho de ux"]) ||
+            getByHeader(rowArray, ["com base em suas atividades recentes identifique os principais gaps de conhecimento ou praticas", "principais gaps", "gaps de conhecimento", "trabalho de ux"]) ||
             "Gaps percebidos não informados.";
+
+          const parsedScores = Object.fromEntries(scoreColumns.map(({ key }) => [
+            key,
+            toScore(scoreIndexes[key] >= 0 ? rowArray[scoreIndexes[key]] : "")
+          ]));
 
           return {
             name,
@@ -247,18 +259,7 @@ export default function App() {
             experience,
             date: new Date().toISOString().split('T')[0],
             scores: {
-              research,
-              ui,
-              architecture,
-              tools,
-              metrics,
-              documentation,
-              feedback_iter,
-              communication,
-              receive_feedback,
-              problem_solving,
-              autonomy,
-              presentation
+              ...parsedScores
             },
             discursive: {
               expectation: expectationText,
@@ -268,7 +269,7 @@ export default function App() {
           }
           };
         });
-        console.log("PARSED LIST", parsedList);  
+        console.log("DADOS PARSEADOS:", parsedList[0]);
         setMultipleProfessionals(parsedList);
         setSelectedMappingIndex(0); // foca no primeiro por padrão
         
